@@ -4,6 +4,7 @@ filename=uigetfile(); % load processed k means .mat file
 load(filename)
 
 % small change
+% small change second computer
 % load published odor response matrix and centroids
 publishedOdorPath='/Users/mattchurgin/Desktop/dblab/mattFunctions/odorpanelResponsesDoOR/odorPanel_12/odorPanel_12_DoORData.mat';
 publishedOR=load(publishedOdorPath);
