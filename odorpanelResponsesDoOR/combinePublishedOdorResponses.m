@@ -1,7 +1,6 @@
 clear all
 close all
 
-filesep='/';
 homeDir='/Users/mattchurgin/Desktop/dblab/mattFunctions/odorpanelResponsesDoOR';
 cd(homeDir)
 
@@ -47,7 +46,7 @@ gh146glomsR{36}='Or59c';
 gh146gloms{1}='D';
 gh146gloms{2}='DA1';
 gh146gloms{3}='DA2';
-gh146gloms{4}='DA4I';
+gh146gloms{4}='DA4l';
 gh146gloms{5}='DC1';
 gh146gloms{6}='DC2';
 gh146gloms{7}='DC3';
@@ -69,7 +68,7 @@ gh146gloms{22}='VA3';
 gh146gloms{23}='VA4';
 gh146gloms{24}='VA5';
 gh146gloms{25}='VA6';
-gh146gloms{26}='VA7I';
+gh146gloms{26}='VA7l';
 gh146gloms{27}='VC1';
 gh146gloms{28}='VC2';
 gh146gloms{29}='VL2a';
@@ -106,8 +105,13 @@ end
 % save odor panel data in unique folder (in case other odor panels exist)
 dname=uigetdir;
 cd(dname)
-splits=strfind(dname,filesep);
-savename=[dname((splits(end)+1):end) '_DoORData'];
+try
+    splits=strfind(dname,'/');
+    savename=[dname((splits(end)+1):end) '_DoORData'];
+catch
+    splits=strfind(dname,'\');
+    savename=[dname((splits(end)+1):end) '_DoORData'];
+end
 
 currFiles=dir(pwd);
 
@@ -162,15 +166,15 @@ odorResponsesgh146=NaN*zeros(length(gh146gloms),size(odorResponses,2));
 % remove glomeruli not tagged by gh146
 for i=1:length(glomNames)
     for j=1:length(gh146glomsR)
-        if strcmp(glomNames{i},gh146glomsR{j})
+        if strfind(glomNames{i},gh146glomsR{j})
             glomNamesgh146{j}=glomNames{i};
             odorResponsesgh146(j,:)=odorResponses(i,:);
             break
         end
-%         if j==length(gh146glomsR)
-%             odorResponses(i,:)=NaN;
-%             glomNames{i}=[];
-%         end
+        %         if j==length(gh146glomsR)
+        %             odorResponses(i,:)=NaN;
+        %             glomNames{i}=[];
+        %         end
     end
 end
 

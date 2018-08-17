@@ -6,7 +6,6 @@ function [greenChannel greenChannelUnwrapped redChannel redChannelUnwrapped] = r
 % nChannels is the number of image channels saved by scanimage
 % Dependencies:  Uses readVolumeImage.m to read each volume
 
-filesep='/';
 currfiles=dir(directory);
 imageFiles=[];
 for i=1:length(currfiles)
@@ -24,8 +23,11 @@ elseif length(imageFiles)<expectedNumberVolumes
 end
 
 % get dimensions of each volume
-[gc1 rc1]=readVolumeImage([directory filesep currfiles(imageFiles(1)).name],nChannels);
-
+try
+    [gc1 rc1]=readVolumeImage([directory '/' currfiles(imageFiles(1)).name],nChannels);
+catch
+    [gc1 rc1]=readVolumeImage([directory '\' currfiles(imageFiles(1)).name],nChannels);
+end
 
 % parameters to smooth images
 % eventually want to use size of the image to determine the smoothing parameters (higher pixel count means you can smooth more)
@@ -34,7 +36,7 @@ end
 useDefaults=0;
 if useDefaults
     gsSize=0.65;
-    smoothingFilter=[3 3 3]; 
+    smoothingFilter=[3 3 3];
 else
     gsSize=0.65;
     smoothingFilter=[5 7 3];
@@ -57,7 +59,11 @@ redChannelUnwrapped(1,:)=rc1(:);
 
 for i=2:numVolumes
     try
-        [gc1 rc1]=readVolumeImage([directory filesep currfiles(imageFiles(i)).name],nChannels);
+        try
+            [gc1 rc1]=readVolumeImage([directory '/' currfiles(imageFiles(i)).name],nChannels);
+        catch
+            [gc1 rc1]=readVolumeImage([directory '\' currfiles(imageFiles(i)).name],nChannels);
+        end
         
         if gsSize>0
             gc1=smooth3(gc1,'gaussian',smoothingFilter,gsSize);

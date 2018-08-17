@@ -16,8 +16,6 @@ function [greenImages redImages kmeansOut unwrappedImages unwrappedReduced meanG
 % imageThreshold is the gray-scale intensity value above which a pixel must
 % have on average to be considered for clustering
 
-
-filesep='/';
 warning('off')
 
 if nargin<2
@@ -88,12 +86,22 @@ for i = 1:length(currFolders)
         possibleImages=dir(currFolders(i).name);
         imageFiles=[];
         for j=1:length(possibleImages)
-            if strfind([currFolders(i).name filesep possibleImages(j).name],'tif')
-                imageFiles=[imageFiles j];
+            try
+                if strfind([currFolders(i).name '/' possibleImages(j).name],'tif')
+                    imageFiles=[imageFiles j];
+                end
+            catch
+                if strfind([currFolders(i).name '\' possibleImages(j).name],'tif')
+                    imageFiles=[imageFiles j];
+                end
             end
         end
         
-        [green red]=readVolumeImage([currFolders(i).name filesep possibleImages(imageFiles).name],nChannels);
+        try
+            [green red]=readVolumeImage([currFolders(i).name '/' possibleImages(imageFiles).name],nChannels);
+        catch
+            [green red]=readVolumeImage([currFolders(i).name '\' possibleImages(imageFiles).name],nChannels);
+        end
         
         green = smooth3(green,'gaussian',[3 3 1]);
         red = smooth3(red,'gaussian',[3 3 1]);
@@ -211,4 +219,4 @@ kmeansOut = reshape(kmeansOut,[imageSize(1),imageSize(2),imageSize(3)]);
 display(['finished calculating kmeans.  time elapsed: ' num2str(toc) ' seconds'])
 
 % save data in current directory
-save(['rawKmeans_' num2str(numKmeans) '_clusters_' num2str(fractionOfVariance) 'fractionOfVarianceKept.mat'],'folder1','kmeansOut','meanGreenImages','meanRedImages','imageIs2d','expectedNumberVolumes','C','sumd','explainedVariance','numKmeans')
+save(['rawKmeans_' num2str(numKmeans) '_clusters_' num2str(fractionOfVariance) 'fractionOfVarianceKept.mat'],'folder1','kmeansOut','meanGreenImages','meanRedImages','imageIs2d','expectedNumberVolumes','C','sumd','explainedVariance','numKmeans','nChannels')

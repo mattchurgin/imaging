@@ -1,4 +1,4 @@
-function [clusterVols clusterInfo grnResponse grnResponseNorm t] = process2DImagingKmeans(rawKmeansOutput,frameRate,nChannels)
+function [clusterVols clusterInfo grnResponse grnResponseNorm t] = process2DImagingKmeans(rawKmeansOutput,frameRate)
 % process2DImagingKmeans takes the output of volumeImagingKmeans 
 % and produces the time series response of each cluster to each odor
 % delivered

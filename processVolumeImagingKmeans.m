@@ -9,7 +9,6 @@ function [clusterVolU clusterInfoU grnResponse grnResponseNorm t] = processVolum
 % seconds
 % nChannels is the number of image channels saved by scanimage
 
-filesep='/';
 tic
 load(rawKmeansOutput)
 
@@ -48,13 +47,22 @@ for i = 1:length(currFolders)
         possibleImages=dir(currFolders(i).name);
         imageFiles=[];
         for j=1:length(possibleImages)
-            if strfind([currFolders(i).name filesep possibleImages(j).name],'tif')
-                imageFiles=[imageFiles j];
+            try
+                if strfind([currFolders(i).name '/' possibleImages(j).name],'tif')
+                    imageFiles=[imageFiles j];
+                end
+            catch
+                if strfind([currFolders(i).name '\' possibleImages(j).name],'tif')
+                    imageFiles=[imageFiles j];
+                end
             end
         end
         
-        [green red]=readVolumeImage([currFolders(i).name filesep possibleImages(imageFiles).name],nChannels);
-        
+        try
+            [green red]=readVolumeImage([currFolders(i).name '/' possibleImages(imageFiles).name],nChannels);
+        catch
+            [green red]=readVolumeImage([currFolders(i).name '\' possibleImages(imageFiles).name],nChannels);
+        end
         green = smooth3(green,'gaussian',[3 3 1]);
         greenImages{i}=green;
         redImages{i}=red;
@@ -71,7 +79,7 @@ warning('off')
 % sizes (remove noise)
 %clusterVols=visualizeClusters(kmeansOut);
 
-[clusterVols clusterInfo clusterVolU clusterInfoU]=visualizeClusters(kmeansOut,200,16000,15);
+[clusterVols clusterInfo clusterVolU clusterInfoU]=visualizeClusters(kmeansOut,500,20000,15);
 drawnow
 
 % dummyi=1;
