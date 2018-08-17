@@ -6,7 +6,7 @@ function [greenChannel greenChannelUnwrapped redChannel redChannelUnwrapped] = r
 % nChannels is the number of image channels saved by scanimage
 % Dependencies:  Uses readVolumeImage.m to read each volume
 
-
+filesep='/';
 currfiles=dir(directory);
 imageFiles=[];
 for i=1:length(currfiles)
@@ -24,7 +24,7 @@ elseif length(imageFiles)<expectedNumberVolumes
 end
 
 % get dimensions of each volume
-[gc1 rc1]=readVolumeImage([directory '/' currfiles(imageFiles(1)).name],nChannels);
+[gc1 rc1]=readVolumeImage([directory filesep currfiles(imageFiles(1)).name],nChannels);
 
 
 % parameters to smooth images
@@ -57,7 +57,7 @@ redChannelUnwrapped(1,:)=rc1(:);
 
 for i=2:numVolumes
     try
-        [gc1 rc1]=readVolumeImage([directory '/' currfiles(imageFiles(i)).name],nChannels);
+        [gc1 rc1]=readVolumeImage([directory filesep currfiles(imageFiles(i)).name],nChannels);
         
         if gsSize>0
             gc1=smooth3(gc1,'gaussian',smoothingFilter,gsSize);
