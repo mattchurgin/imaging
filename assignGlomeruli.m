@@ -5,6 +5,7 @@ load(filename)
 
 % small change
 % small change second computer
+% third change
 % load published odor response matrix and centroids
 publishedOdorPath='/Users/mattchurgin/Desktop/dblab/mattFunctions/odorpanelResponsesDoOR/odorPanel_12/odorPanel_12_DoORData.mat';
 publishedOR=load(publishedOdorPath);
