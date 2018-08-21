@@ -2,9 +2,7 @@ function [] = animate3dplot(filename)
 % make animation of current 3d plot
 % Matt Churgin, August 2018
 
-if ~strcmp(filename(end-2:end),'gif')
-    filename=[filename '.gif'];
-end
+if filename(end-2:end)
 elevationAngle=80;
 startAz=270; % starting azimuth angle
 revolutions=1; % number of revolutions to complete

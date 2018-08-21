@@ -8,6 +8,7 @@ function [clusterVolU clusterInfoU grnResponse grnResponseNorm t] = processVolum
 % volumeAcquisitionTime is the repetition rate of volume acquisition in
 % seconds
 % nChannels is the number of image channels saved by scanimage
+% Matt Churgin, August 2018
 
 tic
 load(rawKmeansOutput)

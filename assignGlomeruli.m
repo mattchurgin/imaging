@@ -1,12 +1,14 @@
 clear all
 close all
 % assign glomeruli
-
+% Matt Churgin, August 2018
 % initialization
 leftLobe=0;
 minResponse=0.1; % remove clusters with maximum response less than this
-odorToPhysWeight=1; % should be between 0 and 1
-showIntermediateFigs=0;
+odorToPhysWeight=100/100; % should be between 0 and 1
+showIntermediateFigs=1;
+compressDoORdata=0; % if you want to take log of DooR data to compress (DoOR data is ORN, PNs have compressed signal)
+normalizeWithinGlom=0; % if you want to z-score odor responses within each glomerulus
 
 filename=uigetfile(); % load processed k means .mat file
 
@@ -25,31 +27,42 @@ for j=1:length(pubNames)
     pubNames{j}=num2str(pubNames{j});
     pubGlomNames{j}=num2str(pubGlomNames{j});
 end
-% DoOR data is taken from ORNs.  PNs are known to amplify weak signal.
-% Therefore, we compress pubOR signal by taking log of published odor response
-pubOR=log10(pubOR);
-pubOR(isinf(pubOR))=NaN;
-pubOR=pubOR-min(min(pubOR));
 
+if compressDoORdata
+    % DoOR data is taken from ORNs.  PNs are known to amplify weak signal.
+    % Therefore, we compress pubOR signal by taking log of published odor response
+    pubOR=log10(pubOR);
+    pubOR(isinf(pubOR))=NaN;
+    pubOR=pubOR-min(min(pubOR));
+end
 
 % mean center and normalize published data
-% centroid data is for the right antenna lobe
-for i=1:size(pubOR,2)
-    if nanstd(pubOR(:,i))>0
-        pubOR(:,i)=(pubOR(:,i)-nanmean(pubOR(:,i)))./nanstd(pubOR(:,i));
-    else
-        pubOR(:,i)=(pubOR(:,i)-nanmean(pubOR(:,i)));
+if normalizeWithinGlom
+    for i=1:size(pubOR,2)
+        if nanstd(pubOR(:,i))>0
+            pubOR(:,i)=(pubOR(:,i)-nanmean(pubOR(:,i)))./nanstd(pubOR(:,i));
+        else
+            pubOR(:,i)=(pubOR(:,i)-nanmean(pubOR(:,i)));
+        end
+    end
+else
+    for i=1:size(pubOR,1)
+        if nanstd(pubOR(i,:))>0
+            pubOR(i,:)=(pubOR(i,:)-nanmedian(pubOR(i,:)))./max(pubOR(i,:));
+        else
+            pubOR(i,:)=(pubOR(i,:)-nanmedian(pubOR(i,:)));
+        end
     end
 end
 
-
+% centroid data is for the right antenna lobe
 if leftLobe
-    pubX=-(pubX-nanmean(pubX))/max(pubX); % flip x axis centroids if looking at a left antenna lobe
+    pubX=-(pubX-nanmedian(pubX))/max(pubX); % flip x axis centroids if looking at a left antenna lobe
 else
-    pubX=(pubX-nanmean(pubX))/max(pubX);
+    pubX=(pubX-nanmedian(pubX))/max(pubX);
 end
-pubY=(pubY-nanmean(pubY))/max(pubY); % minus sign flips the y centroids to match our data
-pubZ=-(pubZ-nanmean(pubZ))/max(pubZ); % minus sign flips the z centroids to match our data (lower z means more ventral)
+pubY=(pubY-nanmedian(pubY))/max(pubY);
+pubZ=-(pubZ-nanmedian(pubZ))/max(pubZ); % minus sign flips the z centroids to match our data (lower z means more ventral)
 
 % calculate max response over all time points
 maxResponse=max(grnResponseNorm,[],3);
@@ -81,26 +94,40 @@ cY=(cY-nanmedian(cY))/max(cY);
 cZ=(cZ-nanmedian(cZ))/max(cZ);
 
 
-% mean center and normalize each cluster
-for i=1:size(myOR,2)
-    if std(myOR(:,i))>0
-        myOR(:,i)=(myOR(:,i)-mean(myOR(:,i)))./std(myOR(:,i));
-    else
-        myOR(:,i)=(myOR(:,i)-mean(myOR(:,i)));
+% mean center and normalize each cluster's odor response
+% normalize each cluster's odor response (to get relative activation
+if normalizeWithinGlom
+    for i=1:size(myOR,2)
+        if std(myOR(:,i))>0
+            myOR(:,i)=(myOR(:,i)-mean(myOR(:,i)))./std(myOR(:,i));
+        else
+            myOR(:,i)=(myOR(:,i)-mean(myOR(:,i)));
+        end
+    end
+else
+    for i=1:size(myOR,1)
+        if nanstd(myOR(i,:))>0
+            myOR(i,:)=(myOR(i,:)-nanmedian(myOR(i,:)))./max(myOR(i,:));
+        else
+            myOR(i,:)=(myOR(i,:)-nanmedian(myOR(i,:)));
+        end
     end
 end
-
 
 % calculate euclidean distance between each cluster and published responses
 % for these odors
 odorDist=NaN*zeros(size(myOR,2),size(pubOR,2));
+odorDistAcross=NaN*zeros(size(myOR,2),size(pubOR,2));
 physDist=NaN*zeros(size(myOR,2),size(pubOR,2));
 for i=1:size(myOR,2)
     for j=1:size(pubOR,2)
         if any(pubOR(:,j))
             if any(myOR(:,i))
-                odorDist(i,j)=sqrt(nansum((myOR(:,i)-pubOR(:,j)).^2))/sqrt(sum(isfinite(pubOR(:,j))));
-                %odorDist(i,j)=sqrt(nansum((myOR(:,i)-pubOR(:,j)).^2))/sqrt(nansum((myOR(:,i)+pubOR(:,j)).^2));
+                %odorDist(i,j)=sqrt(nansum((myOR(:,i)-pubOR(:,j)).^2))/sqrt(sum(isfinite(pubOR(:,j))));
+                odorDist(i,j)=sqrt(nansum(((myOR(:,i)-pubOR(:,j)))).^2)/sqrt(nansum(((myOR(:,i)+pubOR(:,j)))).^2);
+                
+                %odorDist(i,j)=sqrt(nansum(((myOR(:,i)-pubOR(:,j))./myORraw(:,i)).^2))./sqrt(sum(isfinite(pubOR(:,j))));
+                
                 physDist(i,j)=sqrt((cX(i)-pubX(j)).^2+(cY(i)-pubY(j)).^2+(cZ(i)-pubZ(j)).^2);
             end
         end
@@ -217,60 +244,4 @@ end
 
 
 
-
-
-
-
-
-
-%%
-
-% find glomerulus that minimizes odor distance to each cluster
-glomMinimizing=zeros(1,size(myOR,2));
-glomMinimizingMatrix=zeros(size(myOR,2),size(pubOR,2));
-for i=1:size(myOR,2)
-    if any(odorDist(i,:))
-        [val ind]=nanmin(odorDist(i,:));
-        glomMinimizing(i)=ind;
-        
-        [asdf asdf2]=sort(odorDist(i,:));
-        glomMinimizingMatrix(i,:)=asdf2;
-    else
-        glomMinimizing(i)=0;
-        glomMinimizingMatrix(i,:)=NaN;
-    end
-end
-
-
-
-
-
-
-%% OLD
-% find cluster that minimizes distance to each glomeruli
-for i=1:size(pubOR,2)
-    if any(distM(:,i))
-        [val ind]=nanmin(distM(:,i));
-        clusterMinimizing(i)=ind;
-    else
-        clusterMinimizing(i)=0;
-    end
-end
-
-pcl=unique(clusterMinimizing);
-
-for j=2:length(pcl)
-    [val ind]=min(distM(pcl(j),:));
-    glomMinimizing(pcl(j))=ind;
-end
-%
-% assign glomeruli by finding minimal distance from each cluster
-for i=1:size(myOR,2)
-    if sum(isfinite(distM(i,:)))>0
-        [val ind]=nanmin(distM(i,:));
-        clusterName{i}=pubNames{ind};
-    else
-        clusterName{i}='censored';
-    end
-end
 

@@ -5,6 +5,7 @@ function [greenChannel greenChannelUnwrapped redChannel redChannelUnwrapped] = r
 % Assumes .tif files
 % nChannels is the number of image channels saved by scanimage
 % Dependencies:  Uses readVolumeImage.m to read each volume
+% Matt Churgin, August 2018
 
 currfiles=dir(directory);
 imageFiles=[];

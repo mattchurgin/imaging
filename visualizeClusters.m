@@ -8,7 +8,7 @@ function [clusterVol clusterInfo uniqueCV uniqueCI] = visualizeClusters(kmeansOu
 % of pixels are removed.  These tend to be noise.
 % maxObjects specifies the maximum number of objects that a cluster can
 % have.  Typically clusters with very large number of objects are noise.
-
+% Matt Churgin, August 2018
 
 if nargin<3
     pixelThresh=100; % should depend on size of image

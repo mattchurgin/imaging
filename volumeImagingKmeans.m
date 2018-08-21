@@ -15,7 +15,7 @@ function [greenImages redImages kmeansOut unwrappedImages unwrappedReduced meanG
 % smoothingFrames is number of frames to smooth (temporal smoothing)
 % imageThreshold is the gray-scale intensity value above which a pixel must
 % have on average to be considered for clustering
-
+% Matt Churgin, August 2018
 warning('off')
 
 if nargin<2

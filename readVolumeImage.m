@@ -2,7 +2,7 @@ function [greenChannel redChannel] = readVolumeImage(fileName, nChannels)
 % readVolumeImage reads a volume image (or 2d image series) acquired on two-photon microscope
 % saves the green channel and red channel in separate image stacks
 % nChannels is the number of image channels saved by scanimage
-
+% Matt Churgin, August 2018
 imageInfo=imfinfo(fileName);
 nFrames=length(imageInfo);
 ySize=imageInfo(1).Width;
