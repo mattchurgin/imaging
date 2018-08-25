@@ -2,10 +2,6 @@
 clear all
 close all
 
-useScaling=1;
-xDimensions=1:256;
-yDimensions=1:192;
-
 homeDir='/Users/mattchurgin/Desktop/dblab/mattFunctions/odorpanelResponsesDoOR';
 cd(homeDir)
 
@@ -96,7 +92,6 @@ for j=1:length(currFiles)
     end
 end
 
-
 % load AL centroids
 fid = fopen(filesToLoad{1});
 currdata = textscan(fid, '%s','Delimiter',','); % you will need to change the number   of values to match your file %f for numbers and %s for strings.
@@ -123,15 +118,6 @@ for j=6:5:length(currdata{1})
     tempi=tempi+1;
 end
 
-% scale data to roughly match 2-photon image data
-if useScaling
-    xscale=max(xDimensions)/max(allALdataX);
-    yscale=max(yDimensions)/max(allALdataY);
-else
-    xscale=1;
-    yscale=1;
-end
-
 % save each AL's data into a unique cell array if it is a gh146 glom
 xAllDatagh146=cell(1,length(gh146gloms));
 yAllDatagh146=cell(1,length(gh146gloms));
@@ -140,8 +126,8 @@ zAllDatagh146=cell(1,length(gh146gloms));
 for i=1:length(allALdataGlomname)
     for j=1:length(gh146gloms)
         if strcmp(allALdataGlomname{i},gh146gloms{j})
-            xAllDatagh146{j}=[xAllDatagh146{j} xscale*allALdataX(i)];
-            yAllDatagh146{j}=[yAllDatagh146{j} yscale*allALdataY(i)];
+            xAllDatagh146{j}=[xAllDatagh146{j} allALdataX(i)];
+            yAllDatagh146{j}=[yAllDatagh146{j} allALdataY(i)];
             zAllDatagh146{j}=[zAllDatagh146{j} allALdataZ(i)];
             break
         end
@@ -149,13 +135,6 @@ for i=1:length(allALdataGlomname)
     if mod(i,100)==0
        display(['processed element ' num2str(i) ' of ' num2str(length(allALdataGlomname))]) 
     end
-end
-
-%  convert boundary into logical matrices
-glomCentroidMask=cell(1,length(xAllDatagh146));
-[xx yy]=meshgrid(xDimensions,yDimensions);
-for j=1:length(xAllDatagh146)
-    glomCentroidMask{j} = inpolygon(xx,yy,xAllDatagh146{j},yAllDatagh146{j});
 end
 
 % save odor panel data in unique folder (in case other odor panels exist)
@@ -209,8 +188,8 @@ for i=1:length(glomLocationNames)
     for j=1:length(gh146gloms)
         if strcmp(glomLocationNames{i},gh146gloms{j})
             glomLocationNamesgh146{j}=glomLocationNames{i};
-            xcgh146(j)=xscale*xc{i};
-            ycgh146(j)=yscale*yc{i};
+            xcgh146(j)=xc{i};
+            ycgh146(j)=yc{i};
             zcgh146(j)=zc{i};
             break
         end
@@ -243,5 +222,4 @@ publishedOR.gh146zCentroid=zcgh146;
 publishedOR.gh146glomBorderX=xAllDatagh146;
 publishedOR.gh146glomBorderY=yAllDatagh146;
 publishedOR.gh146glomBorderZ=zAllDatagh146;
-publishedOR.gh146glomCentroidMask=glomCentroidMask;
 save(savename,'publishedOR')

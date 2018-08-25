@@ -80,7 +80,7 @@ warning('off')
 % sizes (remove noise)
 %clusterVols=visualizeClusters(kmeansOut);
 
-[clusterVols clusterInfo clusterVolU clusterInfoU]=visualizeClusters(kmeansOut,500,20000,15);
+[clusterVols clusterInfo clusterVolU clusterInfoU clusterInfo2dU]=visualizeClusters(kmeansOut,500,20000,15);
 drawnow
 
 % dummyi=1;
@@ -162,6 +162,6 @@ for i=1:size(grnResponseNorm,1)
 end
 
 % save data in current directory
-save(['processedKmeans_' num2str(numKmeans) 'kmeans_' num2str(numClusters) 'uniqueclusters.mat'],'clusterInfoU','clusterVolU','grnResponse','grnResponseNorm','t')
+save(['processedKmeans_' num2str(numKmeans) 'kmeans_' num2str(numClusters) 'uniqueclusters.mat'],'clusterInfoU','clusterVolU','clusterInfo2dU','grnResponse','grnResponseNorm','t')
 
 disp(['finished. time to process raw k-means output: ' num2str(toc) ' seconds'])

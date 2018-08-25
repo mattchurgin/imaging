@@ -503,8 +503,8 @@ odorScoreShuffled=zeros(1,length(clusterAssignment));
 permutedArray=randperm(length(clusterAssignment));
 % validate using odor response
 for j=1:length(clusterAssignment)
-    odorScore(j)=sqrt(nansum((myORAcrossGlom(:,clusterAssignment(j))-pubORAcrossGlom(:,glomerulusAssignment(j))).^2)/sqrt(nansum(isfinite(pubORAcrossGlom(:,glomerulusAssignment(j))))));
-    odorScoreShuffled(j)=sqrt(nansum((myORAcrossGlom(:,clusterAssignment((j)))-pubORAcrossGlom(:,glomerulusAssignment(permutedArray(j)))).^2)/sqrt(nansum(isfinite(pubORAcrossGlom(:,glomerulusAssignment(permutedArray(j)))))));
+    odorScore(j)=sqrt(nansum((myORAcrossGlom(:,clusterAssignment(j))-pubORAcrossGlom(:,glomerulusAssignment(j))).^2)/sqrt(nansum(isfinite(pubOR(:,glomerulusAssignment(j))))));
+    odorScoreShuffled(j)=sqrt(nansum((myORAcrossGlom(:,clusterAssignment((j)))-pubORAcrossGlom(:,glomerulusAssignment(permutedArray(j)))).^2)/sqrt(nansum(isfinite(pubOR(:,glomerulusAssignment(permutedArray(j)))))));
 end
 
 tokeepOdorScore=find(isfinite(odorScore));
@@ -522,8 +522,8 @@ odorScoreShuffledControl=zeros(1,length(clusterAssignmentControl));
 permutedArrayControl=randperm(length(clusterAssignmentControl));
 % validate using odor response
 for j=1:length(clusterAssignmentControl)
-    odorScoreControl(j)=sqrt(nansum((myORAcrossGlom(:,clusterAssignmentControl(j))-pubORAcrossGlom(:,glomerulusAssignmentControl(j))).^2)/sqrt(nansum(isfinite(pubORAcrossGlom(:,glomerulusAssignmentControl(j))))));
-    odorScoreShuffledControl(j)=sqrt(nansum((myORAcrossGlom(:,clusterAssignmentControl((j)))-pubORAcrossGlom(:,glomerulusAssignmentControl(permutedArrayControl(j)))).^2)/sqrt(nansum(isfinite(pubORAcrossGlom(:,glomerulusAssignmentControl(permutedArrayControl(j)))))));
+    odorScoreControl(j)=sqrt(nansum((myORWithinGlom(:,clusterAssignmentControl(j))-pubORWithinGlom(:,glomerulusAssignmentControl(j))).^2)/sqrt(nansum(isfinite(pubORWithinGlom(:,glomerulusAssignmentControl(j))))));
+    odorScoreShuffledControl(j)=sqrt(nansum((myORWithinGlom(:,clusterAssignmentControl((j)))-pubORWithinGlom(:,glomerulusAssignmentControl(permutedArrayControl(j)))).^2)/sqrt(nansum(isfinite(pubORWithinGlom(:,glomerulusAssignmentControl(permutedArrayControl(j)))))));
 end
 
 tokeepOdorScoreControl=find(isfinite(odorScoreControl));

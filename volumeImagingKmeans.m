@@ -201,6 +201,10 @@ display(['beginning kmeans calculation'])
 maxIteration=150;
 numReplicates=10;
 useParallel=0;
+useGpu=0;
+if useGpu
+    unwrappedReduced=gpuArray(unwrappedReduced);
+end
 % if using parallel processing toolbox
 if useParallel
     pool = parpool;                      % Invokes workers
