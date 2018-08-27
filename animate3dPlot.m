@@ -24,8 +24,8 @@ for az=startAz:2:(startAz+revolutions*360)
     
     % Write to the GIF File
     if az == startAz
-        imwrite(imind,cm,filename,'gif', 'Loopcount',inf,'DelayTime',0.05);
+        imwrite(imind,cm,filename,'gif', 'Loopcount',inf,'DelayTime',0.1);
     else
-        imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0.05);
+        imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0.1);
     end
 end
