@@ -280,7 +280,7 @@ for i=1:size(myOR,2)
             xpeaks(i,j)=xpeak(1);
             ypeaks(i,j)=ypeak(1);
         end
-        disp(['calculated cross-correlation for cluster ' num2str(i) ', glomerulus ' num2str(j)])
+        disp(['calculated cross-correlation for cluster ' num2str(i) ' of ' num2str(size(myOR,2)) ', glomerulus ' num2str(j)])
     end
 end
 disp(['time elapsed to compute cross-correlations: ' num2str(toc) ' seconds'])
@@ -707,13 +707,21 @@ totalOdorScore=zeros(1,nShuffles);
 totalOdorScoreShuffled=zeros(1,nShuffles);
 totalDistScore=zeros(1,nShuffles);
 totalShapeScore=zeros(1,nShuffles);
+
+correlationTriesP=zeros(1,nShuffles);
+correlationShuffledTriesP=zeros(1,nShuffles);
+correlationDistTriesP=zeros(1,nShuffles);
+correlationDistShuffledTriesP=zeros(1,nShuffles);
+
+
+correlationTries=zeros(1,nShuffles);
+correlationShuffledTries=zeros(1,nShuffles);
 correlationDistTries=zeros(1,nShuffles);
 correlationDistShuffledTries=zeros(1,nShuffles);
-correlationShapeTries=zeros(1,nShuffles);
-correlationShapeShuffledTries=zeros(1,nShuffles);
 
-glomsToTry=30;  % for each cluster, which top X gloms to consider
-clustersToTry=30; % for each glomerulus, which top X clusters to consider
+
+glomsToTry=5;  % for each cluster, which top X gloms to consider
+clustersToTry=5; % for each glomerulus, which top X clusters to consider
 probToPermute=0.1; % fraction of time to permute [0,1]
 
 %assignmentThreshold=prctile(compositeDist(:),10);
@@ -901,9 +909,11 @@ for nTries=1:nShuffles
     odorScoreTries{nTries}=odorScore;
     totalOdorScore(nTries)=nansum(odorScore)/sum(isfinite(odorScore));
     correlationTries(nTries)=mycorr(1,2);
+    correlationTriesP(nTries)=myp(1,2);
     distScoreTries{nTries}=distPriorScore;
     totalDistScore(nTries)=nansum(distPriorScore)/sum(isfinite(distPriorScore));
     correlationDistTries(nTries)=mycorrDist(1,2);
+    correlationDistTriesP(nTries)=mypDist(1,2);
     shapeScoreTries{nTries}=shapePriorScore;
     totalShapeScore(nTries)=nansum(shapePriorScore)/sum(isfinite(shapePriorScore));
     correlationShapeTries(nTries)=mycorrShape(1,2);
@@ -911,7 +921,9 @@ for nTries=1:nShuffles
     odorScoreShuffledTries{nTries}=odorScoreShuffled;
     totalOdorScoreShuffled(nTries)=nansum(odorScoreShuffled)/sum(isfinite(odorScoreShuffled));
     correlationShuffledTries(nTries)=mycorrShuffled(1,2);
+    correlationShuffledTriesP(nTries)=mypShuffled(1,2);
     correlationDistShuffledTries(nTries)=mycorrDistShuffled(1,2);
+    correlationDistShuffledTriesP(nTries)=mypDistShuffled(1,2);
     correlationShapeShuffledTries(nTries)=mycorrShapeShuffled(1,2);
     
     if mod(nTries,500)==0
