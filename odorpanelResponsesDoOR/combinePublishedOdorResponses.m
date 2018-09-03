@@ -43,6 +43,11 @@ gh146glomsR{33}='Or9a';
 gh146glomsR{34}='Ir76a';
 gh146glomsR{35}='Or42a';
 gh146glomsR{36}='Or59c';
+% adding three additional gloms listed as hit by GH146 in Jeanne et al.
+% 2018
+gh146glomsR{37}='Ir75d';
+gh146glomsR{38}='Unknown';
+gh146glomsR{39}='Or23a';
 
 gh146gloms{1}='D';
 gh146gloms{2}='DA1';
@@ -80,6 +85,11 @@ gh146gloms{33}='VM3';
 gh146gloms{34}='VM4';
 gh146gloms{35}='VM7d';
 gh146gloms{36}='VM7v';
+% adding three additional gloms listed as hit by GH146 in Jeanne et al.
+% 2018
+gh146gloms{37}='VL1';
+gh146gloms{38}='VA7m';
+gh146gloms{39}='DA3';
 
 % load extracted glomeruli centroids
 currFiles=dir(pwd);
