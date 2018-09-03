@@ -2,7 +2,8 @@ function [greenImages redImages kmeansOut unwrappedImages unwrappedReduced meanG
 % volumeImagingKmeans finds clusters in a set of a volume images (or 2D
 % image times series)
 %
-% numKmeans is the number of clusters to find
+% numKmeans is the number of clusters to find.  if numKmeans is a vector,
+% volumeimagingkemeans will calculate kmeans for each element in numkmeans
 % expectedNumberVolumes is how many volume acquisitions are expected to be acquired
 % for each odor delivery.  Sometimes acquisition fails, resulting in an
 % incorrect number of volumes for a given delivery.  In this case the
@@ -78,8 +79,8 @@ for i = 1:length(currFolders)
             imageSize=[size(green,1) size(green,2) size(green,3)];
             display(['loaded volume series ' num2str(i) ' of ' num2str(length(currFolders))]) 
        catch
-           display(['folder ' currFolders(i).name ' could not be read'])
-       end
+          display(['folder ' currFolders(i).name ' could not be read'])
+      end
     else % if expected volumes = 1, we are dealing with a 2D time series
         % processing is slightly different for 2d image series
         imageIs2d=1;
@@ -199,9 +200,10 @@ display(['principal components computed.  time elapsed = ' num2str(toc) ' second
 tic
 display(['beginning kmeans calculation'])
 maxIteration=150;
-numReplicates=10;
+numReplicates=5;
+multipleKmeans=(length(numKmeans)>0);
 useParallel=0;
-useGpu=0;
+useGpu=1;
 if useGpu
     unwrappedReduced=gpuArray(unwrappedReduced);
 end
@@ -213,14 +215,36 @@ if useParallel
         'Streams',stream);
     
     [kmeansOut,C,sumd,D] = kmeans(unwrappedReduced,numKmeans,'Options',options,'MaxIter',maxIteration,'Display','iter','Distance','sqeuclidean','Replicates',numReplicates);
+
 else % not using parallel processing toolbox
-    [kmeansOut,C,sumd,D] = kmeans(unwrappedReduced,numKmeans,'MaxIter',maxIteration,'Display','iter','Distance','sqeuclidean');
+    % for computing kmeans with multiple k
+    if multipleKmeans
+        kmeansOut=cell(1,length(numKmeans));
+        for j=1:length(numKmeans)
+            for jj=1:numReplicates
+                [kmeansOuttemp] = kmeans(unwrappedReduced,numKmeans(j),'MaxIter',maxIteration,'Display','final','Distance','sqeuclidean');
+                kmeansOut{j}{jj}=gather(reshape(kmeansOuttemp,[imageSize(1),imageSize(2),imageSize(3)]));
+                disp(['processed kmeans for k = ' num2str(numKmeans(j)) ', Replicate ' num2str(jj)])
+            end
+        end
+    else
+        [kmeansOut,C,sumd,D] = kmeans(unwrappedReduced,numKmeans,'MaxIter',maxIteration,'Display','iter','Distance','sqeuclidean');
+    end
 end
 
 % restore original image shape
-kmeansOut = reshape(kmeansOut,[imageSize(1),imageSize(2),imageSize(3)]);
-
+if ~multipleKmeans
+    if useGpu
+        kmeansOut = gather(reshape(kmeansOut,[imageSize(1),imageSize(2),imageSize(3)]));
+    else
+        kmeansOut = reshape(kmeansOut,[imageSize(1),imageSize(2),imageSize(3)]);
+    end
+end
 display(['finished calculating kmeans.  time elapsed: ' num2str(toc) ' seconds'])
 
 % save data in current directory
-save(['rawKmeans_' num2str(numKmeans) '_clusters_' num2str(fractionOfVariance) 'fractionOfVarianceKept.mat'],'folder1','kmeansOut','meanGreenImages','meanRedImages','imageIs2d','expectedNumberVolumes','C','sumd','explainedVariance','numKmeans','nChannels')
+if multipleKmeans
+    save(['rawKmeans_' num2str(numKmeans(end)) '_clusters_' num2str(fractionOfVariance) 'fractionOfVarianceKeptMultiplekmeans5replicates.mat'],'folder1','kmeansOut','meanGreenImages','meanRedImages','imageIs2d','expectedNumberVolumes','explainedVariance','numKmeans','nChannels')
+else
+    save(['rawKmeans_' num2str(numKmeans) '_clusters_' num2str(fractionOfVariance) 'fractionOfVarianceKept.mat'],'folder1','kmeansOut','meanGreenImages','meanRedImages','imageIs2d','expectedNumberVolumes','C','sumd','explainedVariance','numKmeans','nChannels')
+end
