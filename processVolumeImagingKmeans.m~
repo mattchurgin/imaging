@@ -79,12 +79,10 @@ display(['images loaded.  time elapsed: ' num2str(toc) ' seconds'])
 
 warning('off')
 
-% remove any green images cells that have an empty dimension
+% remove any green images cells that are empty
 for j=1:length(greenImages)
-    minsize(j)=min(size(greenImages{j}));
+    minsize(j)=min(size(greenImages{j})
 end
-todelete=find(minsize==0);
-greenImages(todelete)=[];
 
 % use visualizeClusters to identify clusters with likely true glomerular
 % sizes (remove noise)

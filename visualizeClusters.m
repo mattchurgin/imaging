@@ -81,16 +81,17 @@ for i=1:nclusters
                 % save properties of 2d projected image
                 
                 CD2d = bwconncomp(sum(uniqueCluster,3)>0);
-                uniqueClusterInfo2d=regionprops(CD2d,'all');
+                nIslands
+                uniqueClusterInfo2d=regionprops(CD2d,'all')
                 uniqueCI2d{nIslands}=uniqueClusterInfo2d;
                 
                 if plotYorN
                     p2=patch(isosurface(uniqueCluster),'FaceColor',rand(1,3),'EdgeColor','none','FaceAlpha',0.3);
                     isonormals(uniqueCluster,p2)
                     %
-                    %                 drawnow
+                                     %drawnow
                     %                 uniqueCI{nIslands}.Centroid
-                    %                 pause
+                                    % pause
                 end
                 nIslands=nIslands+1;
             end

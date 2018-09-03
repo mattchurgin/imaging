@@ -1,4 +1,4 @@
-function [] = animate3dplot(filename)
+function [] = animate3dPlot(filename)
 % make animation of current 3d plot
 % Matt Churgin, August 2018
 

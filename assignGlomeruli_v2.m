@@ -6,13 +6,17 @@
 %clear all
 close all
 
+% colors!
+mcolors(1,:)=[0, 0.4470, 0.7410];
+mcolors(2,:)=[0.8500, 0.3250, 0.0980];
+
 % initialization
-leftLobe=0;
+leftLobe=1;
 minResponse=0.1; % remove clusters with maximum response less than this
 showIntermediateFigs=0;
-compressDoORdata=1; % if you want to take log of DooR data to compress (DoOR data is ORN, PNs have compressed signal)
+compressDoORdata=0; % if you want to take log of DooR data to compress (DoOR data is ORN, PNs have compressed signal)
 omitAtlasZSlices=1;
-myPercentage=3;
+myPercentage=3; % for normalizing centroid locations
 
 % weights for each prior
 % all 1s for equal weighting
@@ -151,8 +155,8 @@ end
 % can be used to measure rank comparison between classified and published
 % odor responses
 myORRank=NaN*zeros(size(myORAcrossGlom,1),size(myORAcrossGlom,2));
-for i=1:size(myORAcrossGlom,1)
-    [vals inds]=sort(myORAcrossGlom(i,:),'ascend');
+for i=1:size(myOR,2)
+    [vals inds]=sort(myOR(:,i));
     % remove nans
     todelete=find(isnan(vals));
     vals(todelete)=[];
@@ -160,13 +164,13 @@ for i=1:size(myORAcrossGlom,1)
     
     % save rank order
     for j=1:length(inds)
-        myORRank(i,inds(j))=j;
+        myORRank(inds(j),i)=j;
     end
 end
 
 pubORRank=NaN*zeros(size(pubORAcrossGlom,1),size(pubORAcrossGlom,2));
-for i=1:size(pubORAcrossGlom,1)
-    [vals inds]=sort(pubORAcrossGlom(i,:),'ascend');
+for i=1:size(pubOR,2)
+    [vals inds]=sort(pubOR(:,i));
     % remove nans
     todelete=find(isnan(vals));
     vals(todelete)=[];
@@ -174,17 +178,30 @@ for i=1:size(pubORAcrossGlom,1)
     
     % save rank order
     for j=1:length(inds)
-        pubORRank(i,inds(j))=j;
+        pubORRank(inds(j),i)=j;
     end
 end
 
-% for i=1:size(pubORAcrossGlom,1)
-%    pubORRank(i,:)=pubORRank(i,:)/max(pubORRank(i,:));
-% end
-%
-% for i=1:size(myORAcrossGlom,1)
-%    myORRank(i,:)=myORRank(i,:)/max(myORRank(i,:));
-% end
+odorRankCorr=NaN*zeros(size(myORRank,2),size(pubORRank,2));
+odorRankCorrP=NaN*zeros(size(myORRank,2),size(pubORRank,2));
+for i=1:size(myORRank,2)
+    for j=1:size(pubORRank,2)
+        myORtemp=myORRank(:,i);
+        pubORtemp=pubORRank(:,j);
+        
+        availableOdors=find(isfinite(pubORtemp));
+        if any(availableOdors)
+            myORavailable=myORtemp(availableOdors);
+            pubORavailable=pubORtemp(availableOdors);
+            
+            % re-rank myORRank to include only available odors
+            [vals inds]=sort(myORavailable);
+            [myC myP]=corrcoef(pubORavailable,inds);
+            odorRankCorr(i,j)=myC(1,2);
+            odorRankCorrP(i,j)=myP(1,2);
+        end
+    end
+end
 
 % visualize centroids
 figure
@@ -288,9 +305,10 @@ disp(['time elapsed to compute cross-correlations: ' num2str(toc) ' seconds'])
 %% combine priors and assign glomeruli
 % normalize distance matrices between 0 and 1
 odorDistNormed=(odorDist-min(odorDist(:)))/(max(odorDist(:))-min(odorDist(:)));
+odorCorrNormed=1-(odorRankCorr-min(odorRankCorr(:)))/(max(odorRankCorr(:))-min(odorRankCorr(:)));
 physDistNormed=(physDist-prctile(physDist(:),1))/(max(physDist(:))-min(physDist(:)));
 
-shapePriorN=1-shapePriorNorm;
+shapePriorN=1-shapePriorNorm; % flip shape prior so lower scores are better
 shapePriorNormed=(shapePriorN-prctile(shapePriorN(:),1))/(max(shapePriorN(:))-min(shapePriorN(:)));
 
 % make sure minimum is greater than zero
@@ -305,12 +323,12 @@ toFillS=find(any(shapePriorNormed)==0);
 shapePriorNormed(:,toFillS)=nanmean(shapePriorNormed(:));
 shapePriorNormed(rawClustersToDelete,:)=NaN;
 
-toFillO=find(any(odorDistNormed)==0);
-odorDistNormed(:,toFillO)=nanmean(odorDistNormed(:));
-odorDistNormed(rawClustersToDelete,:)=NaN;
+toFillO=find(any(odorCorrNormed)==0);
+odorCorrNormed(:,toFillO)=nanmean(odorCorrNormed(:));
+odorCorrNormed(rawClustersToDelete,:)=NaN;
 
-compositeDist =  1*physDistWeight*log10(physDistNormed)+ 0*shapeWeight*log10(shapePriorNormed);
-compositeDistOdor =  physDistWeight*log10(physDistNormed)+ odorWeight*log10(odorDistNormed);
+compositeDist =  1*physDistWeight*log10(physDistNormed);%+ shapeWeight*log10(shapePriorNormed);
+%compositeDist =  physDistWeight*(physDistNormed);%+ odorWeight*(odorCorrNormed);
 
 % create a fully randomized composite dist as a control
 compositeDistControl=rand(size(physDistNormed,1),size(physDistNormed,2));
@@ -556,8 +574,11 @@ permutedArray=randperm(length(clusterAssignment));
 
 % validate using odor response
 for j=1:length(clusterAssignment)
-    odorScore(j)=(odorDistNormed(clusterAssignment(j),glomerulusAssignment(j)));
-    odorScoreShuffled(j)=(odorDistNormed(clusterAssignment(j),glomerulusAssignment(permutedArray(j))));
+    %odorScore(j)=(odorDistNormed(clusterAssignment(j),glomerulusAssignment(j)));
+    %odorScoreShuffled(j)=(odorDistNormed(clusterAssignment(j),glomerulusAssignment(permutedArray(j))));
+    
+    odorScore(j)=(odorRankCorr(clusterAssignment(j),glomerulusAssignment(j)));
+    odorScoreShuffled(j)=(odorRankCorr(clusterAssignment(j),glomerulusAssignment(permutedArray(j))));
     
     distPriorScore(j)=(physDistNormed(clusterAssignment(j),glomerulusAssignment(j)));
     distPriorScoreShuffled(j)=(physDistNormed(clusterAssignment(j),glomerulusAssignment(permutedArray(j))));
@@ -593,27 +614,6 @@ fdistShuffled=polyfit(distPriorScoreShuffledNoNan,odorScoreShuffledNoNan,1);
 [mycorrShapeShuffled mypShapeShuffled]=corrcoef(distPriorScoreShuffledNoNan,shapePriorScoreShuffledNoNan);
 fshapeShuffled=polyfit(distPriorScoreShuffledNoNan,shapePriorScoreShuffledNoNan,1);
 
-% control distance matrix (randomized) for comparison
-odorScoreControl=zeros(1,length(clusterAssignmentControl));
-odorScoreShuffledControl=zeros(1,length(clusterAssignmentControl));
-permutedArrayControl=randperm(length(clusterAssignmentControl));
-for j=1:length(clusterAssignmentControl)
-    odorScoreControl(j)=sqrt(nansum((myORAcrossGlom(:,clusterAssignmentControl(j))-pubORAcrossGlom(:,glomerulusAssignmentControl(j))).^2)/sqrt(nansum(isfinite(pubORAcrossGlom(:,glomerulusAssignmentControl(j))))));
-    odorScoreShuffledControl(j)=sqrt(nansum((myORAcrossGlom(:,clusterAssignmentControl((j)))-pubORAcrossGlom(:,glomerulusAssignmentControl(permutedArrayControl(j)))).^2)/sqrt(nansum(isfinite(pubORAcrossGlom(:,glomerulusAssignmentControl(permutedArrayControl(j)))))));
-end
-
-tokeepOdorScoreControl=find(isfinite(odorScoreControl));
-odorScoreNoNanControl=odorScoreControl(tokeepOdorScoreControl);
-assignmentScoreNoNanControl=assignmentScoreControl(tokeepOdorScoreControl);
-[mycorrControl mypControl]=corrcoef(assignmentScoreNoNanControl,odorScoreNoNanControl);
-
-tokeepOdorScoreShuffledControl=find(isfinite(odorScoreShuffledControl));
-odorScoreShuffledNoNanControl=odorScoreShuffledControl(tokeepOdorScoreShuffledControl);
-assignmentScoreShuffledNoNanControl=assignmentScoreControl(tokeepOdorScoreShuffledControl);
-[mycorrShuffledControl mypControlShuffled]=corrcoef(assignmentScoreShuffledNoNanControl,odorScoreShuffledNoNanControl);
-
-mcolors(1,:)=[0, 0.4470, 0.7410];
-mcolors(2,:)=[0.8500, 0.3250, 0.0980];
 figure
 plot(assignmentScoreNoNan,odorScoreNoNan,'o','Color',mcolors(1,:),'LineWidth',3)
 hold on
@@ -624,7 +624,7 @@ plot(assignmentScoreShuffledNoNan,odorScoreShuffledNoNan,'x','Color',mcolors(2,:
 plot(assignmentScoreNoNan,polyval(ftotal,assignmentScoreNoNan),'--','Color',mcolors(1,:),'LineWidth',2)
 plot(assignmentScoreShuffledNoNan,polyval(ftotalShuffled,assignmentScoreShuffledNoNan),'--','Color',mcolors(2,:),'LineWidth',2)
 xlabel('Assignment Score (Trained)')
-ylabel('Odor Distance (Held Out)')
+ylabel('Odor Rank Correlation (Held Out)')
 legend('Unshuffled','Shuffled')
 text(prctile(assignmentScoreNoNan,50),prctile(odorScoreNoNan,10),['Unshuffled r = ' num2str(mycorr(1,2)) ', p = ' num2str(myp(1,2))],'FontSize',15)
 text(prctile(assignmentScoreNoNan,50),prctile(odorScoreNoNan,5),['Shuffled r = ' num2str(mycorrShuffled(1,2)) ', p = ' num2str(mypShuffled(1,2))],'FontSize',15)
@@ -643,7 +643,7 @@ plot(distPriorScoreShuffledNoNan,odorScoreShuffledNoNan,'x','Color',mcolors(2,:)
 plot(distPriorScoreNoNan,polyval(fdist,distPriorScoreNoNan),'--','Color',mcolors(1,:),'LineWidth',2)
 plot(distPriorScoreShuffledNoNan,polyval(fdistShuffled,distPriorScoreShuffledNoNan),'--','Color',mcolors(2,:),'LineWidth',2)
 xlabel('Centroid Distance (Trained)')
-ylabel('Odor Distance (Held Out)')
+ylabel('Odor Rank Correlation (Held Out)')
 legend('Unshuffled','Shuffled')
 text(prctile(distPriorScoreNoNan,50),prctile(odorScoreNoNan,10),['Unshuffled r = ' num2str(mycorrDist(1,2)) ', p = ' num2str(mypDist(1,2))],'FontSize',15)
 text(prctile(distPriorScoreNoNan,50),prctile(odorScoreNoNan,5),['Shuffled r = ' num2str(mycorrDistShuffled(1,2)) ', p = ' num2str(mypDistShuffled(1,2))],'FontSize',15)
@@ -698,6 +698,10 @@ save('assignedGlomeruli.mat','clusterAssignment','glomerulusAssignment','composi
 %% Use random permutations to try and improve greedy algorithm
 
 nShuffles=1000; % number of trials
+
+shapeWeightTries=zeros(1,nShuffles);
+physDistWeightTries=zeros(1,nShuffles);
+
 glomerulusAssignmentTries=cell(1,nShuffles);
 clusterAssignmentTries=cell(1,nShuffles);
 trialScore=zeros(1,nShuffles);
@@ -708,17 +712,17 @@ totalOdorScoreShuffled=zeros(1,nShuffles);
 totalDistScore=zeros(1,nShuffles);
 totalShapeScore=zeros(1,nShuffles);
 
-correlationTriesP=zeros(1,nShuffles);
-correlationShuffledTriesP=zeros(1,nShuffles);
-correlationDistTriesP=zeros(1,nShuffles);
-correlationDistShuffledTriesP=zeros(1,nShuffles);
-
-
 correlationTries=zeros(1,nShuffles);
 correlationShuffledTries=zeros(1,nShuffles);
 correlationDistTries=zeros(1,nShuffles);
 correlationDistShuffledTries=zeros(1,nShuffles);
+correlationShapeTries=zeros(1,nShuffles);
+correlationShapeShuffledTries=zeros(1,nShuffles);
 
+correlationTriesP=zeros(1,nShuffles);
+correlationShuffledTriesP=zeros(1,nShuffles);
+correlationDistTriesP=zeros(1,nShuffles);
+correlationDistShuffledTriesP=zeros(1,nShuffles);
 
 glomsToTry=5;  % for each cluster, which top X gloms to consider
 clustersToTry=5; % for each glomerulus, which top X clusters to consider
@@ -731,14 +735,18 @@ tic
 for nTries=1:nShuffles
     
     if nTries>1
-        physDistWeight=1;
-        shapeWeight=0;%rand/2;
+        shapeWeight=rand/2;
+        physDistWeight=1-shapeWeight;
     else
-        physDistWeight=1;
-        shapeWeight=0;
+        physDistWeight=0.63;
+        shapeWeight=0.37;
     end
-    compositeDist =  physDistWeight*log10(physDistNormed)+ shapeWeight*log10(shapePriorNormed);
-    compositeDist=compositeDist/(physDistWeight+shapeWeight);
+    shapeWeightTries(nTries)=shapeWeight;
+    physDistWeightTries(nTries)=physDistWeight;
+    
+    %compositeDist =  physDistWeight*log10(physDistNormed)+ shapeWeight*log10(shapePriorNormed);
+    %compositeDist =  (physDistNormed);
+    compositeDist =  shapeWeight*(odorCorrNormed)+physDistWeight*physDistNormed;
     compositeDist(:,slicesToRemove)=NaN;
     
     compositeDistTemp=compositeDist;
@@ -865,9 +873,12 @@ for nTries=1:nShuffles
     
     % validate using odor response
     for j=1:length(clusterAssignment)
-        odorScore(j)=(odorDistNormed(clusterAssignment(j),glomerulusAssignment(j)));
-        odorScoreShuffled(j)=(odorDistNormed(clusterAssignment(j),glomerulusAssignment(permutedArray(j))));
+        %odorScore(j)=(odorDistNormed(clusterAssignment(j),glomerulusAssignment(j)));
+        %odorScoreShuffled(j)=(odorDistNormed(clusterAssignment(j),glomerulusAssignment(permutedArray(j))));
         
+        odorScore(j)=(odorRankCorr(clusterAssignment(j),glomerulusAssignment(j)));
+        odorScoreShuffled(j)=(odorRankCorr(clusterAssignment(j),glomerulusAssignment(permutedArray(j))));
+    
         distPriorScore(j)=(physDistNormed(clusterAssignment(j),glomerulusAssignment(j)));
         distPriorScoreShuffled(j)=(physDistNormed(clusterAssignment(j),glomerulusAssignment((j))));
         
@@ -907,7 +918,7 @@ for nTries=1:nShuffles
     assignmentScoreTries{nTries}=assignmentScore;
     
     odorScoreTries{nTries}=odorScore;
-    totalOdorScore(nTries)=nansum(odorScore)/sum(isfinite(odorScore));
+    totalOdorScore(nTries)=nanmean(odorScore);
     correlationTries(nTries)=mycorr(1,2);
     correlationTriesP(nTries)=myp(1,2);
     distScoreTries{nTries}=distPriorScore;
@@ -919,7 +930,7 @@ for nTries=1:nShuffles
     correlationShapeTries(nTries)=mycorrShape(1,2);
     
     odorScoreShuffledTries{nTries}=odorScoreShuffled;
-    totalOdorScoreShuffled(nTries)=nansum(odorScoreShuffled)/sum(isfinite(odorScoreShuffled));
+    totalOdorScoreShuffled(nTries)=nanmean(odorScoreShuffled);
     correlationShuffledTries(nTries)=mycorrShuffled(1,2);
     correlationShuffledTriesP(nTries)=mypShuffled(1,2);
     correlationDistShuffledTries(nTries)=mycorrDistShuffled(1,2);
@@ -927,7 +938,7 @@ for nTries=1:nShuffles
     correlationShapeShuffledTries(nTries)=mycorrShapeShuffled(1,2);
     
     if mod(nTries,500)==0
-        disp(['completed shuffle ' num2str(nTries)])
+        disp(['completed shuffle ' num2str(nTries) ' of ' num2str(nShuffles)])
     end
 end
 disp(['finished. time elapsed = ' num2str(toc) ' seconds'])
@@ -936,6 +947,23 @@ trialScore=real(trialScore);
 [bestv besti]=min(trialScore);
 clusterAssignment=clusterAssignmentTries{besti};
 glomerulusAssignment=glomerulusAssignmentTries{besti};
+todelete=find(assignmentScoreTries{besti}>prctile(compositeDist(:),10));
+clusterAssignment(todelete)=[];
+glomerulusAssignment(todelete)=[];
+
+[bestv besti]=max(totalOdorScore);
+clusterAssignment=clusterAssignmentTries{besti};
+glomerulusAssignment=glomerulusAssignmentTries{besti};
+todelete=find(assignmentScoreTries{besti}>prctile(compositeDist(:),20));
+clusterAssignment(todelete)=[];
+glomerulusAssignment(todelete)=[];
+
+[bestv besti]=min(totalDistScore);
+clusterAssignment=clusterAssignmentTries{besti};
+glomerulusAssignment=glomerulusAssignmentTries{besti};
+todelete=find(assignmentScoreTries{besti}>prctile(compositeDist(:),20));
+%clusterAssignment(todelete)=[];
+%glomerulusAssignment(todelete)=[];
 
 figure
 plot(trialScore)
@@ -1006,4 +1034,4 @@ for j=1:length(glomerulusAssignment)
     hold on
 end
 
-save('assignedGlomeruli.mat','clusterAssignment','glomerulusAssignment','compositeDist','myOR','pubOR','odorDist','physDistWeight','shapeWeight')
+save('assignedGlomeruli.mat','clusterAssignment','glomerulusAssignment','compositeDist','myORAcrossGlom','pubORAcrossGlom','odorDistNormed','physDistNormed','shapePriorNormed','pubGlomNames')
