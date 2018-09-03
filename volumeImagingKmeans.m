@@ -206,7 +206,7 @@ display(['principal components computed.  time elapsed = ' num2str(toc) ' second
 tic
 display(['beginning kmeans calculation'])
 maxIteration=150;
-multipleKmeans=(length(numKmeans)>0);
+multipleKmeans=(length(numKmeans)>1);
 useParallel=0;
 useGpu=1;
 if useGpu
