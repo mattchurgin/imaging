@@ -206,7 +206,7 @@ display(['principal components computed.  time elapsed = ' num2str(toc) ' second
 tic
 display(['beginning kmeans calculation'])
 maxIteration=150;
-multipleKmeans=(length(numKmeans)>0);
+multipleKmeans=(length(numKmeans)>1);
 useParallel=0;
 useGpu=1;
 if useGpu
@@ -239,7 +239,7 @@ else % not using parallel processing toolbox
         end
     else
         for jj=1:numReplicates
-            [kmeansOut,C,sumd] = kmeans(unwrappedReduced,numKmeans,'MaxIter',maxIteration,'Display','iter','Distance','sqeuclidean');
+            [kmeansOuttemp,Ctemp,sumdtemp] = kmeans(unwrappedReduced,numKmeans,'MaxIter',maxIteration,'Display','iter','Distance','sqeuclidean');
             if useGpu
                 kmeansOut{jj}=gather(reshape(kmeansOuttemp,[imageSize(1),imageSize(2),imageSize(3)]));
             else
