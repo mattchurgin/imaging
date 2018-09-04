@@ -1,4 +1,4 @@
-function [clusterVolU clusterInfoU grnResponse grnResponseNorm t] = processVolumeImagingKmeans(rawKmeansOutput,volumeAcquisitionTime,nChannels)
+function [clusterVolU clusterInfoU grnResponse t] = processVolumeImagingKmeans(rawKmeansOutput,volumeAcquisitionTime,nChannels)
 % processVolumeImagingKmeans takes the output of volumeImagingKmeans and
 % prunes trivial clusters (removes clusters of too small or too large size)
 % and produces the time series response of each cluster to each odor
@@ -106,7 +106,7 @@ for i=1:length(greenImages)
     for j = 1:numClusters
         for k=1:size(greenImages{1},4)
             % calculate df/f 
-            grnResponse(i,j,k)=nanmean(nanmean(nanmean((greenImages{i}(:,:,:,k)-currBaseLine)./currBaseLine.*clusterVolU{j})));
+            grnResponse(i,j,k)=100*nanmean(nanmean(nanmean((greenImages{i}(:,:,:,k)-currBaseLine)./currBaseLine.*(clusterVolU{j}))));
             
             % calculate df/f using meanGreenImage
            %grnResponse(i,j,k)=100*mean(mean(mean((greenImages{i}(:,:,:,k)-meanGreenImages)./meanGreenImages.*(clusterVolU{j}))));
@@ -122,7 +122,7 @@ figure
 for i=1:size(grnResponse,1)
     subplot(1,size(grnResponse,1),i)
     
-    imagesc(t,1:size(grnResponse,2),squeeze(grnResponse(i,:,:)),[0 0.1])
+    imagesc(t,1:size(grnResponse,2),squeeze(grnResponse(i,:,:)),[0 1])
     title(['odor ' num2str(i)])
     if i==1
         xlabel('Time (s)')

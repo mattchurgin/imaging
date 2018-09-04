@@ -1,4 +1,6 @@
 function [clusterVolU clusterInfoU clusterArea nClustersFound] = processMultipleKmeans(rawKmeansFile)
+% returns clusters and cluster info for rawKmeansFile where there are
+% multiple replicates or multiple values for k
 
 load(rawKmeansFile);
 

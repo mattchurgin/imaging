@@ -85,7 +85,7 @@ for i=1:length(consensusClusters)
     end
     
     temp(temp<currthresh)=0;
-    
+    temp=logical(temp);
     CC = bwconncomp(temp); % find connected voxels within the cluster
     numPixels = cellfun(@numel,CC.PixelIdxList);
     
@@ -192,5 +192,3 @@ for i=1:length(clusterInfoConsensus)
 end
 clusterInfoConsensus(todelete)=[];
 clusterVolConsensus(todelete)=[];
-
-showClusters(clusterVolConsensus,clusterInfoConsensus)
