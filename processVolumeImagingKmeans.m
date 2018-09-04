@@ -10,7 +10,8 @@ function [clusterVolU clusterInfoU grnResponse grnResponseNorm t] = processVolum
 % nChannels is the number of image channels saved by scanimage
 % Matt Churgin, August 2018
 
-tic
+tic    
+load(rawKmeansOutput)
 
 % load images
 home1 = pwd;
@@ -90,7 +91,7 @@ if numReplicates>1
     clusterInfoU=clusterInfoConsensus;
 else
     disp('processing single replicate')
-    load(rawKmeansOutput)
+
     [clusterVols clusterInfo clusterVolU clusterInfoU]=visualizeClusters(kmeansOut,400,20000,30,1);
 end
 
@@ -105,7 +106,7 @@ for i=1:length(greenImages)
     for j = 1:numClusters
         for k=1:size(greenImages{1},4)
             % calculate df/f 
-            grnResponse(i,j,k)=100*nanmean(nanmean(nanmean((greenImages{i}(:,:,:,k)-currBaseLine)./currBaseLine.*clusterVolU{j})));
+            grnResponse(i,j,k)=nanmean(nanmean(nanmean((greenImages{i}(:,:,:,k)-currBaseLine)./currBaseLine.*clusterVolU{j})));
             
             % calculate df/f using meanGreenImage
            %grnResponse(i,j,k)=100*mean(mean(mean((greenImages{i}(:,:,:,k)-meanGreenImages)./meanGreenImages.*(clusterVolU{j}))));
@@ -114,29 +115,20 @@ for i=1:length(greenImages)
     display(['calculated cluster means for volumes ' num2str(i) ' of ' num2str(length(greenImages))])
 end
 
-grnResponseNorm=zeros(length(greenImages),numClusters,size(greenImages{1},4));
-for i=1:length(greenImages)
-    for j = 1:numClusters
-        % subtract baseline
-        grnResponseNorm(i,j,:)=grnResponse(i,j,:)-prctile(grnResponse(i,j,:),10);        
-    end
-    display(['calculated normalized response for volumes ' num2str(i) ' of ' num2str(length(greenImages))])
-end
-
 % calculate time vector
 t=[1:size(greenImages{1},4)]*volumeAcquisitionTime;
 
 figure
-for i=1:size(grnResponseNorm,1)
-    subplot(1,size(grnResponseNorm,1),i)
+for i=1:size(grnResponse,1)
+    subplot(1,size(grnResponse,1),i)
     
-    imagesc(t,1:size(grnResponseNorm,2),squeeze(grnResponse(i,:,:)),[0 1])
+    imagesc(t,1:size(grnResponse,2),squeeze(grnResponse(i,:,:)),[0 0.1])
     title(['odor ' num2str(i)])
-    if i==1 
+    if i==1
         xlabel('Time (s)')
-    ylabel('Cluster #')
-    title(['Air'])
-    else 
+        ylabel('Cluster #')
+        title(['Air'])
+    else
         title(['Odor #' num2str(i-1)])
         set(gca,'YTick','')
     end
@@ -144,6 +136,6 @@ for i=1:size(grnResponseNorm,1)
 end
 
 % save data in current directory
-save(['processedKmeans_' num2str(numKmeans(end)) 'kmeans_' num2str(numClusters) 'uniqueclusters.mat'],'clusterInfoU','clusterVolU','grnResponse','grnResponseNorm','t')
+save(['processedKmeans_' num2str(numKmeans(end)) 'kmeans_' num2str(numClusters) 'uniqueclusters.mat'],'clusterInfoU','clusterVolU','grnResponse','t')
 
 disp('done')
