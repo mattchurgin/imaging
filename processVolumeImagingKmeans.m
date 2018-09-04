@@ -11,8 +11,6 @@ function [clusterVolU clusterInfoU grnResponse grnResponseNorm t] = processVolum
 % Matt Churgin, August 2018
 
 tic
-load(rawKmeansOutput)
-
 
 % load images
 home1 = pwd;
@@ -33,7 +31,6 @@ tic
 for i = 1:length(currFolders)
     % if volume imaging a time series
     if expectedNumberVolumes>1
-        
         try
             [green greenUnwrapped red redUnwrapped]=readVolumeImageSeries(currFolders(i).name,expectedNumberVolumes,nChannels);
             greenImages{i}=green;
@@ -43,7 +40,6 @@ for i = 1:length(currFolders)
         catch
             display(['folder ' currFolders(i).name ' could not be read'])
         end
-        
     else % if expected volumes = 1, we are dealing with a 2D time series
         % processing is slightly different for 2d image series
         imageIs2d=1;
@@ -78,53 +74,29 @@ end
 display(['images loaded.  time elapsed: ' num2str(toc) ' seconds'])
 
 warning('off')
-
-% remove any green images cells that have an empty dimension
-for j=1:length(greenImages)
-    minsize(j)=min(size(greenImages{j}));
-end
-todelete=find(minsize==0);
-greenImages(todelete)=[];
-
 % use visualizeClusters to identify clusters with likely true glomerular
 % sizes (remove noise)
 %clusterVols=visualizeClusters(kmeansOut);
 
-[clusterVols clusterInfo clusterVolU clusterInfoU clusterInfo2dU]=visualizeClusters(kmeansOut,500,20000,15);
-drawnow
+if numReplicates>1
+    disp('processing multiple replicates')
+    [clusterVolU clusterInfoU clusterArea nClustersFound] = processMultipleKmeans(rawKmeansOutput);
+    disp('processed clusters for multiple replicates')
+    [clusterVolConsensus clusterInfoConsensus] = calculateConsensusClusters(clusterVolU,clusterInfoU);
+    disp('found consensus clusters')
+    
+    clear clusterVolU clusterInfoU
+    clusterVolU=clusterVolConsensus;
+    clusterInfoU=clusterInfoConsensus;
+else
+    disp('processing single replicate')
+    load(rawKmeansOutput)
+    [clusterVols clusterInfo clusterVolU clusterInfoU]=visualizeClusters(kmeansOut,400,20000,30,1);
+end
 
-% dummyi=1;
-% for i=1:length(clusterVols)
-%     if sum(sum(sum(clusterVols{i})))>0 
-%         clusterVolsNonzero{dummyi}=clusterVols{i};
-%         clusterInfoNonzero{dummyi}=clusterInfo{i};
-%         tempC{dummyi}=C(i,:);
-%         clusterSum(dummyi)=sumd(i);
-%         dummyi=dummyi+1;
-%     end
-% end
-% 
-% % sort by within cluster kmeans sum
-% [vs is]=sort(clusterSum);
-% clear clusterVols clusterInfo
-% for i=1:length(is)
-%     clusterVols{i}=clusterVolsNonzero{is(i)};
-%     clusterInfo{i}=clusterInfoNonzero{is(i)};
-%     newC{i}=tempC{is(i)};
-% end
+showClusters(clusterVolU,clusterInfoU)
+
 numClusters=length(clusterVolU);
-% 
-% % merge clusters with too similar centroids?
-% % find distance between each cluster centroid
-% for i=1:numClusters
-%     for j=1:numClusters
-%         cij(i,j)=sqrt(sum((newC{i}-newC{j}).^2));
-%     end
-% end
-
-
-% [GloSig] = gloSig(ai_data,output,mask);
-% [GloSig2] = gloSig(ai_data,output2,mask);
 
 grnResponse=zeros(length(greenImages),numClusters,size(greenImages{1},4));
 %redResponse=zeros(length(greenImages),numClusters,size(greenImages{1},4));
@@ -172,6 +144,6 @@ for i=1:size(grnResponseNorm,1)
 end
 
 % save data in current directory
-save(['processedKmeans_' num2str(numKmeans) 'kmeans_' num2str(numClusters) 'uniqueclusters.mat'],'clusterInfoU','clusterVolU','clusterInfo2dU','grnResponse','grnResponseNorm','t')
+save(['processedKmeans_' num2str(numKmeans(end)) 'kmeans_' num2str(numClusters) 'uniqueclusters.mat'],'clusterInfoU','clusterVolU','grnResponse','grnResponseNorm','t')
 
-disp(['finished. time to process raw k-means output: ' num2str(toc) ' seconds'])
+disp('done')
