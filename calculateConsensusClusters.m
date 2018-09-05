@@ -3,10 +3,11 @@ function [clusterVolConsensus clusterInfoConsensus] = calculateConsensusClusters
 % using a single kmeans value.  requires pre-processing of rawKmeans output
 % Matt Churgin, September 2018
 
-distThresh=0.1; % maximum distance allowed to call the clusters a match
-fracIn=0.5; % fraction of iterations a cluster has to be in to be kept
+distThresh=0.1; %.1 default % maximum distance allowed to call the clusters a match
+fracIn=0.5; %.5 defuault % fraction of iterations a cluster has to be in to be kept
 pixelThresh=0;
-finalClusterDistanceThreshold=0.5;
+pixelConsensus=0.5; % fraction of iterations a pixel needs to be part of the cluster to be counted as consensus
+finalClusterDistanceThreshold=.5; %.5 default
 
 % extract centroid for each cluster in each iteration
 clusterCentroids=cell(1,length(clusterInfoU));
@@ -27,6 +28,7 @@ for ii=1:length(clusterCentroids)
                 % euclidean distance matrix
                 %distM{ii}{jj}(i,j)=sqrt(sum((clusterCentroids{ii}(:,i)-clusterCentroids{jj}(:,j)).^2));
                 distM{ii}{jj}(i,j)=sqrt(sum((clusterCentroids{ii}(:,i)-clusterCentroids{jj}(:,j)).^2))/mean([clusterLinearSize{ii}(i) clusterLinearSize{jj}(j)]);
+                
             end
         end
     end
@@ -84,7 +86,7 @@ for i=1:length(consensusClusters)
         end
     end
     
-    temp(temp<currthresh)=0;
+    temp(temp<(pixelConsensus*currthresh))=0;
     temp=logical(temp);
     CC = bwconncomp(temp); % find connected voxels within the cluster
     numPixels = cellfun(@numel,CC.PixelIdxList);
@@ -105,9 +107,9 @@ end
 
 todelete=[];
 for i=1:length(clusterInfoConsensus)
-   if length(clusterInfoConsensus{i})==0 || clusterInfoConsensus{i}.Area<pixelThresh
-      todelete=[todelete i]; 
-   end
+    if length(clusterInfoConsensus{i})==0 || clusterInfoConsensus{i}.Area<pixelThresh
+        todelete=[todelete i];
+    end
 end
 clusterInfoConsensus(todelete)=[];
 clusterVolConsensus(todelete)=[];
@@ -124,21 +126,24 @@ end
 for ii=1:length(clusterConsensusCentroids)
     for jj=1:length(clusterConsensusCentroids)
         distMConsensus(ii,jj)=sqrt(sum((clusterConsensusCentroids(:,ii)-clusterConsensusCentroids(:,jj)).^2))/mean([clusterConsensusLinearSize(ii) clusterConsensusLinearSize(jj)]);
+    
+        prcOverlap(ii,jj)=sum(clusterVolConsensus{ii}(:).*clusterVolConsensus{jj}(:))/mean([clusterInfoConsensus{ii}.Area clusterInfoConsensus{jj}.Area]);
     end
 end
 
-distMtomerge=distMConsensus<finalClusterDistanceThreshold;
-indstomerge=find(sum(distMtomerge,1)>1);
+%distMtomerge=distMConsensus<finalClusterDistanceThreshold;
+tomerge=prcOverlap>0.5;
+indstomerge=find(sum(tomerge,1)>1);
 covered=setxor(indstomerge,1:length(clusterConsensusCentroids));
 mergesToMake=0;
 for i=1:length(covered)
-   mergesToMake=mergesToMake+1;
-   merges{mergesToMake}=covered(i);
+    mergesToMake=mergesToMake+1;
+    merges{mergesToMake}=covered(i);
 end
 
 for i=1:length(indstomerge)
     if ~any(ismember(covered,indstomerge(i)))
-        temp=find(distMtomerge(:,indstomerge(i)));
+        temp=find(tomerge(:,indstomerge(i)));
         covered=[covered temp'];
         
         mergesToMake=mergesToMake+1;
@@ -154,12 +159,12 @@ for i=1:length(merges)
     else
         temp=zeros(size(clusterVolU{1}{1},1),size(clusterVolU{1}{1},2),size(clusterVolU{1}{1},3));
         currthresh=0;
-        for j=1:length(merges{i})   
+        for j=1:length(merges{i})
             temp=temp+clusterVolConsensus{merges{i}(j)};
             currthresh=currthresh+1;
         end
         
-        temp(temp<currthresh)=0;
+        temp(temp<(pixelConsensus*currthresh))=0;
         temp=logical(temp);
         
         CC = bwconncomp(temp); % find connected voxels within the cluster
@@ -186,9 +191,9 @@ clusterInfoConsensus=clusterInfoConsensusMerged;
 
 todelete=[];
 for i=1:length(clusterInfoConsensus)
-   if length(clusterInfoConsensus{i})==0 || clusterInfoConsensus{i}.Area<pixelThresh
-      todelete=[todelete i]; 
-   end
+    if length(clusterInfoConsensus{i})==0 || clusterInfoConsensus{i}.Area<pixelThresh
+        todelete=[todelete i];
+    end
 end
 clusterInfoConsensus(todelete)=[];
 clusterVolConsensus(todelete)=[];
