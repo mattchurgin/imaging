@@ -25,7 +25,7 @@ totalShapeScoreShuffled=zeros(1,nShuffles);
 
 glomsToTry=5;  % for each cluster, which top X gloms to consider
 clustersToTry=5; % for each glomerulus, which top X clusters to consider
-probToPermute=0.5; % fraction of time to permute [0,1]
+probToPermute=0.25; % fraction of time to permute [0,1]
 
 tic
 for nTries=1:nShuffles
@@ -33,6 +33,8 @@ for nTries=1:nShuffles
     if nTries>1
         shapeWeight=rand/2;
         physDistWeight=1-shapeWeight;
+        physDistWeight=0.63;
+        shapeWeight=0.37;
     else
         physDistWeight=0.63;
         shapeWeight=0.37;
@@ -41,7 +43,7 @@ for nTries=1:nShuffles
     physDistWeightTries(nTries)=physDistWeight;
     
     %compositeDist =  physDistWeight*log10(physDistNormed)+ shapeWeight*log10(shapePriorNormed);
-    compositeDist =  (physDistNormed);
+    compositeDist =  physDistWeight*(physDistNormed)+shapeWeight*shapePriorNormed;
     
     assignmentThreshold=prctile(compositeDist(:),20);
     assignmentThreshold=Inf;
@@ -236,6 +238,7 @@ clusterAssignment(todelete)=[];
 glomerulusAssignment(todelete)=[];
 
 [bestv besti]=max(totalOdorScore);
+[bestv besti]=min(0.0*(1-totalOdorScore)+1*totalDistScore+0.0*totalShapeScore);
 clusterAssignment=clusterAssignmentTries{besti};
 glomerulusAssignment=glomerulusAssignmentTries{besti};
 %todelete=find(assignmentScoreTries{besti}>assignmentThreshold);

@@ -92,15 +92,9 @@ gh146gloms{38}='VA7m';
 gh146gloms{39}='DA3';
 
 % load extracted glomeruli centroids
-currFiles=dir(pwd);
 
-dummyi=1;
-for j=1:length(currFiles)
-    if strfind(currFiles(j).name,'csv')
-        filesToLoad{dummyi}=currFiles(j).name;
-        dummyi=dummyi+1;
-    end
-end
+filesToLoad{1}='extractedALcentroids.csv';
+filesToLoad{2}='fullExtractedALdata.csv';
 
 % load AL centroids
 fid = fopen(filesToLoad{1});

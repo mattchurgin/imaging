@@ -15,7 +15,7 @@ minResponse=0.1; % remove clusters with maximum response less than this
 showIntermediateFigs=0;
 compressDoORdata=0; % if you want to take log of DooR data to compress (DoOR data is ORN, PNs have compressed signal)
 omitAtlasZSlices=1;
-myPercentage=3; % for normalizing centroid locations
+myPercentage=1; % for normalizing centroid locations
 
 % weights for each prior
 % all 1s for equal weighting
@@ -103,8 +103,7 @@ end
 
 % LOAD AND PREPROCESS CLUSTER DATA
 % calculate max response over all time points
-maxResponse=max(grnResponseNorm,[],3);
-%maxResponse=sum(grnResponseNorm,3);
+maxResponse=max(grnResponse,[],3);
 myOR=maxResponse(2:13,:); % omit air (odor 1
 rawClustersToDelete=max(myOR)<minResponse;
 myOR(:,rawClustersToDelete)=NaN;
@@ -175,6 +174,8 @@ for i=1:size(pubOR,2)
     end
 end
 
+% calculate spearman (rank) correlation between each cluster and each
+% glomerulus
 odorRankCorr=NaN*zeros(size(myORRank,2),size(pubORRank,2));
 odorRankCorrP=NaN*zeros(size(myORRank,2),size(pubORRank,2));
 for i=1:size(myORRank,2)
@@ -333,6 +334,15 @@ for i=1:size(physDistNormed,1)
         odorClusterRank(i,j)=find(odorClusterRankTemp(i,:)==j);
     end
 end
+
+
+odorClusterRank(:,slicesToRemove)=NaN;
+shapeClusterRank(:,slicesToRemove)=NaN;
+physClusterRank(:,slicesToRemove)=NaN;
+
+odorClusterRank(rawClustersToDelete,:)=NaN;
+shapeClusterRank(rawClustersToDelete,:)=NaN;
+physClusterRank(rawClustersToDelete,:)=NaN;
 
 if showIntermediateFigs
     figure
