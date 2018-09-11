@@ -49,7 +49,7 @@ if nargin<8
     imageThreshold=10; % default pixel percentile threshold
 end
 
-folder1 = uigetdir;
+folder1 = pwd;
 home1 = folder1;
 cd(home1)
 currFolders = dir(folder1);
