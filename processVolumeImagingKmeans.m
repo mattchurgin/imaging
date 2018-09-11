@@ -1,4 +1,4 @@
-function [grnResponse t] = processVolumeImagingKmeans(clusterVolFile,volumeAcquisitionTime,nChannels)
+function [grnResponse t] = processVolumeImagingKmeans(clusterVolFile,rawKmeansOutput,volumeAcquisitionTime,nChannels)
 % processVolumeImagingKmeans takes the output of volumeImagingKmeans and
 % prunes trivial clusters (removes clusters of too small or too large size)
 % and produces the time series response of each cluster to each odor
@@ -6,11 +6,15 @@ function [grnResponse t] = processVolumeImagingKmeans(clusterVolFile,volumeAcqui
 %
 % clusterVolfile is a filename containing the clusterVolU and clusterInfoU
 % cell arrays 
+% rawKmeansOutput is the rawKmeansoutput file
 % volumeAcquisitionTime is the repetition rate of volume acquisition in
 % seconds
 % nChannels is the number of image channels saved by scanimage
 % Matt Churgin, August 2018
 load(clusterVolFile)
+load(rawKmeansOutput)
+
+numClusters=length(clusterVolU);
 
 tic    
 
@@ -112,6 +116,6 @@ for i=1:size(grnResponse,1)
 end
 
 % save data in current directory
-save(['processedKmeans_' num2str(numKmeans(end)) 'kmeans_' num2str(numClusters) 'uniqueclusters.mat'],'clusterInfoU','clusterVolU','grnResponse','t')
+save(['processedKmeans_' num2str(numKmeans(end)) 'kmeans.mat'],'clusterInfoU','clusterVolU','grnResponse','t')
 
 disp('done')

@@ -25,5 +25,4 @@ end
 
 showClusters(clusterVolU,clusterInfoU)
 
-numClusters=length(clusterVolU);
-save('clusterVolFile.mat','clusterVolU','clusterInfoU')
+save('clusterVols.mat','clusterVolU','clusterInfoU')

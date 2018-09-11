@@ -12,7 +12,7 @@ if length(numKmeans==1) % one kmeans run with multiple replicates
     clusterArea=cell(1,length(kmeansOut));
     
     for jj=1:length(kmeansOut)
-        [clusterVol clusterInfo uniqueCV uniqueCI uniqueCI2d] = visualizeClusters((kmeansOut{jj}),300,50000,50);
+        [clusterVol clusterInfo uniqueCV uniqueCI uniqueCI2d] = visualizeClusters(kmeansOut{jj},400,20000,50);
         clusterVolU{jj}=uniqueCV;
         clusterInfoU{jj}=uniqueCI;
         %clusterInfo2dU{jj}=uniqueCI2d;
@@ -31,7 +31,7 @@ else % multiple kmeans runs with multiple replicates
     clusterArea=cell(length(numKmeans),length(kmeansOut{1}));
     for j=1:length(numKmeans)
         for jj=1:length(kmeansOut{j})
-            [clusterVol clusterInfo uniqueCV uniqueCI uniqueCI2d] = visualizeClusters((kmeansOut{j}{jj}),300,50000,50);
+            [clusterVol clusterInfo uniqueCV uniqueCI uniqueCI2d] = visualizeClusters((kmeansOut{j}{jj}),400,20000,50);
             clusterVolU{j}{jj}=uniqueCV;
             clusterInfoU{j}{jj}=uniqueCI;
             %clusterInfo2dU{j}{jj}=uniqueCI2d;
