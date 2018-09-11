@@ -116,6 +116,6 @@ for i=1:size(grnResponse,1)
 end
 
 % save data in current directory
-save(['processedKmeans_' num2str(numKmeans(end)) 'kmeans.mat'],'clusterInfoU','clusterVolU','grnResponse','t')
+save(['clusterResponses.mat'],'clusterInfoU','clusterVolU','grnResponse','t')
 
 disp('done')
