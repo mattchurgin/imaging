@@ -115,7 +115,14 @@ for i=1:size(grnResponse,1)
     set(gca,'FontSize',15)
 end
 
+str = pwd ;
+idx = strfind(str,'/');
+if length(idx)==0
+    idx = strfind(str,'\');
+end
+currentFolderName = str(idx(end)+1:end);
+
 % save data in current directory
-save(['clusterResponses.mat'],'clusterInfoU','clusterVolU','grnResponse','t')
+save(['clusterResponses_' currentFolderName '.mat'],'clusterInfoU','clusterVolU','grnResponse','t')
 
 disp('done')
