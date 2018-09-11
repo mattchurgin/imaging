@@ -1,17 +1,18 @@
-function [clusterVolU clusterInfoU grnResponse t] = processVolumeImagingKmeans(rawKmeansOutput,volumeAcquisitionTime,nChannels)
+function [grnResponse t] = processVolumeImagingKmeans(clusterVolFile,volumeAcquisitionTime,nChannels)
 % processVolumeImagingKmeans takes the output of volumeImagingKmeans and
 % prunes trivial clusters (removes clusters of too small or too large size)
 % and produces the time series response of each cluster to each odor
 % delivered
 %
-% rawKmeansOutput is a .mat file containing raw kmeans output
+% clusterVolfile is a filename containing the clusterVolU and clusterInfoU
+% cell arrays 
 % volumeAcquisitionTime is the repetition rate of volume acquisition in
 % seconds
 % nChannels is the number of image channels saved by scanimage
 % Matt Churgin, August 2018
+load(clusterVolFile)
 
 tic    
-load(rawKmeansOutput)
 
 % load images
 home1 = pwd;
@@ -73,31 +74,6 @@ for i = 1:length(currFolders)
     end
 end
 display(['images loaded.  time elapsed: ' num2str(toc) ' seconds'])
-
-warning('off')
-% use visualizeClusters to identify clusters with likely true glomerular
-% sizes (remove noise)
-%clusterVols=visualizeClusters(kmeansOut);
-
-if numReplicates>1
-    disp('processing multiple replicates')
-    [clusterVolU clusterInfoU clusterArea nClustersFound] = processMultipleKmeans(rawKmeansOutput);
-    disp('processed clusters for multiple replicates')
-    [clusterVolConsensus clusterInfoConsensus] = calculateConsensusClusters(clusterVolU,clusterInfoU);
-    disp('found consensus clusters')
-    
-    clear clusterVolU clusterInfoU
-    clusterVolU=clusterVolConsensus;
-    clusterInfoU=clusterInfoConsensus;
-else
-    disp('processing single replicate')
-
-    [clusterVols clusterInfo clusterVolU clusterInfoU]=visualizeClusters(kmeansOut,400,20000,30,1);
-end
-
-showClusters(clusterVolU,clusterInfoU)
-
-numClusters=length(clusterVolU);
 
 grnResponse=zeros(length(greenImages),numClusters,size(greenImages{1},4));
 %redResponse=zeros(length(greenImages),numClusters,size(greenImages{1},4));
