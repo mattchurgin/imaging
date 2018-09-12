@@ -46,13 +46,13 @@ for i=1:length(currFolders)
     cd(currFolders(i).name)
     if exist('leftLobe')
         cd(['leftLobe\' folderToRunKmeansOn])
-       [clusterVolU clusterInfoU]=makeClusters(rawKmeansOutput)
+       [clusterVolU clusterInfoU]=makeClusters(rawKmeansOutput);
        [grnResponse t] = processVolumeImagingKmeans(clusterVolFile,rawKmeansOutput,volumeAcquisitionTime,nChannels);
         cd([startDir '\' currFolders(i).name])
     end
     if exist('rightLobe')
         cd(['rightLobe\'  folderToRunKmeansOn])
-       [clusterVolU clusterInfoU]=makeClusters(rawKmeansOutput)
+       [clusterVolU clusterInfoU]=makeClusters(rawKmeansOutput);
        [grnResponse t] = processVolumeImagingKmeans(clusterVolFile,rawKmeansOutput,volumeAcquisitionTime,nChannels);
         cd([startDir '\' currFolders(i).name])
     end
