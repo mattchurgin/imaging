@@ -2,7 +2,7 @@
 % Matt Churgin, September 2018
 folderToRunKmeansOn='Volumes';
 
-startDir=uigetfolder(); % user selects the folder containing each fly's image folders
+startDir=uigetdir(); % user selects the folder containing each fly's image folders
 currFolders = dir(startDir);
 currFolders=currFolders(3:end);
 for i=1:length(currFolders)
@@ -34,7 +34,7 @@ clusterVolFile='clusterVols.mat';
 volumeAcquisitionTime=1.2;
 nChannels=2;
 
-startDir=uigetfolder(); % user selects the folder containing each fly's image folders
+startDir=uigetdir(); % user selects the folder containing each fly's image folders
 currFolders = dir(startDir);
 currFolders=currFolders(3:end);
 for i=1:length(currFolders)
