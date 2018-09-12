@@ -17,6 +17,8 @@ compressDoORdata=0; % if you want to take log of DooR data to compress (DoOR dat
 omitAtlasZSlices=1;
 myPercentage=1; % for normalizing centroid locations
 
+zcorrection=5; % multiple z coordinate
+
 filename=uigetfile(); % load file with clusters and responses
 
 load(filename)
@@ -429,24 +431,17 @@ nshuffles=1000;
 % rank.......
 [output] = assignGloms(nshuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr);
 
-[bestv besti]=min(output.optimizedScore);
-clusterAssignment=output.clusterAssignmentHistory{besti};
-glomerulusAssignment=output.glomerulusAssignmentHistory{besti};
-todelete=find(output.optimizedScoreHistory{besti}>output.assignmentThreshold);
-clusterAssignment(todelete)=[];
-glomerulusAssignment(todelete)=[];
-
 [bestv besti]=min(0.67*output.totalDistScore+0.0*output.totalShapeScore);
 clusterAssignment=output.clusterAssignmentHistory{besti};
 glomerulusAssignment=output.glomerulusAssignmentHistory{besti};
-%todelete=find(output.assignmentScoreTries{besti}>output.assignmentThreshold);
+%todelete=find(output.optimizedScoreHistory{besti}>output.assignmentThreshold);
 %clusterAssignment(todelete)=[];
 %glomerulusAssignment(todelete)=[];
 
 figure
 plot(output.distScoreHistory{besti},output.odorScoreHistory{besti},'o','LineWidth',2)
 hold on
-plot(output.distScoreHistory{besti},output.odorScoreShuffledHistory{besti},'x','LineWidth',2)
+plot(output.distScoreHistory{besti},output.odorScoreShuffledHistory{besti},'rx','LineWidth',2)
 legend('Unshuffled','Shuffled')
 legend boxoff
 xlabel('Normalized Euclidean Distance')
@@ -485,12 +480,5 @@ for j=1:length(glomerulusAssignment)
 end
 
 showClusters(clusterVolAssigned,clusterInfoAssigned,clusterLabels);
-% figure
-% for j=1:length(glomerulusAssignment)
-%     p2=patch(isosurface(clusterVolU{clusterAssignment(j)}),'FaceColor',rand(1,3),'EdgeColor','none','FaceAlpha',0.3);
-%     isonormals(clusterVolU{clusterAssignment(j)},p2)
-%     text(clusterInfoU{clusterAssignment(j)}.Centroid(1),clusterInfoU{clusterAssignment(j)}.Centroid(2),clusterInfoU{clusterAssignment(j)}.Centroid(3),pubGlomNames{glomerulusAssignment(j)},'FontSize',15,'FontWeight','Bold')
-%     hold on
-% end
 
-%save('assignedGlomeruli.mat','output','compositeDist','myORAcrossGlom','pubORAcrossGlom','odorDistNormed','physDistNormed','shapePriorNormed','pubGlomNames')
+save('assignedClusters.mat','output','clusterVolAssigned','clusterInfoAssigned','clusterLabels')

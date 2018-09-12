@@ -41,8 +41,7 @@ for nTries=1:nShuffles
     end
     shapeWeightTries(nTries)=shapeWeight;
     physDistWeightTries(nTries)=physDistWeight;
-    
-    %compositeDist =  physDistWeight*log10(physDistNormed)+ shapeWeight*log10(shapePriorNormed);
+   
     compositeDist =  physDistWeight*(physDistNormed)+shapeWeight*shapePriorNormed;
     
     assignmentThreshold=prctile(compositeDist(:),20);

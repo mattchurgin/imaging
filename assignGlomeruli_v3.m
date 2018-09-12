@@ -10,16 +10,19 @@ mcolors(1,:)=[0, 0.4470, 0.7410];
 mcolors(2,:)=[0.8500, 0.3250, 0.0980];
 
 % initialization
-leftLobe=0;
+leftLobe=input('right lobe (0) or left lobe (1)? ');
 minResponse=0.0; % remove clusters with maximum response less than this
 showIntermediateFigs=0;
 compressDoORdata=0; % if you want to take log of DooR data to compress (DoOR data is ORN, PNs have compressed signal)
-omitAtlasZSlices=1;
 myPercentage=1; % for normalizing centroid locations
 
 filename=uigetfile(); % load file with clusters and responses
 
 load(filename)
+showClusters(clusterVolU,clusterInfoU)
+
+clustersManuallyOmitted=input('Any clusters to omit? ');
+omitAtlasZslices=input('omit any atlas z slices?  (5 is ventral, 1 is dorsal) : ');
 
 % LOAD AND PREPROCESS PUBLISHED ODOR RESPONSE AND SPATIAL DATA
 publishedOdorPath='/Users/mattchurgin/Desktop/dblab/mattFunctions/odorpanelResponsesDoOR/odorPanel_12/odorPanel_12_DoORData.mat';
@@ -48,13 +51,12 @@ if leftLobe
 end
 
 % remove z slices
-if omitAtlasZSlices
-    slicesToRemove=find(pubZ==-5);
+slicesToRemove=[];
+for i=1:length(omitAtlasZslices)
+    slicesToRemove=[slicesToRemove find(pubZ==-omitAtlasZslices(i))];
     pubZ(slicesToRemove)=NaN;
     pubX(slicesToRemove)=NaN;
     pubY(slicesToRemove)=NaN;
-else
-    slicesToRemove=[];
 end
 pubX=(pubX-prctile(pubX,myPercentage))/(prctile(pubX,100-myPercentage)-prctile(pubX,myPercentage));
 pubY=(pubY-prctile(pubY,myPercentage))/(prctile(pubY,100-myPercentage)-prctile(pubY,myPercentage));
@@ -101,6 +103,7 @@ maxResponse=max(grnResponse,[],3);
 %maxResponse=sum(grnResponse,3);
 myOR=maxResponse(2:13,:); % omit air (odor 1
 rawClustersToDelete=max(myOR)<minResponse;
+rawClustersToDelete(clustersManuallyOmitted)=1;
 myOR(:,rawClustersToDelete)=NaN;
 myORraw=myOR;
 
@@ -221,7 +224,7 @@ for i=1:size(myOR,2)
     end
 end
 
-%% compute glomerulus shape prior
+% compute glomerulus shape prior
 % use 2d cross-correlation between each cluster maximum 2d projection and
 % the glomerulus cross-section
 nonoverlappenalty=1; % value to set mask outside of cluster boundary
@@ -360,66 +363,62 @@ if showIntermediateFigs
     ylabel('Odor #','FontSize',20)
     title('Glomerular Maximum Response','FontSize',20)
 end
+% 
+% figure;
+% subplot(3,1,1)
+% imagesc(odorCorrNormed)
+% set(gca,'xtick',1:length(pubGlomNames),'xticklabel',string(pubGlomNames),'FontSize',10)
+% xtickangle(30)
+% xlabel('Glomeruli','FontSize',20)
+% ylabel('Cluster #','FontSize',20)
+% title('Odor Panel Rank Correlation (Normed)','FontSize',20)
+% 
+% subplot(3,1,2)
+% imagesc(physDistNormed)
+% set(gca,'xtick',1:length(pubGlomNames),'xticklabel',string(pubGlomNames),'FontSize',10)
+% xtickangle(30)
+% xlabel('Glomeruli','FontSize',20)
+% ylabel('Cluster #','FontSize',20)
+% title('Physical Euclidean Distance (Normed)','FontSize',20)
+% 
+% subplot(3,1,3)
+% imagesc(shapePriorNormed)
+% set(gca,'xtick',1:length(pubGlomNames),'xticklabel',string(pubGlomNames),'FontSize',10)
+% xtickangle(30)
+% xlabel('Glomeruli','FontSize',20)
+% ylabel('Cluster #','FontSize',20)
+% title('Shape Score (Normed)','FontSize',20)
+% 
+% 
+% figure;
+% subplot(3,1,1)
+% imagesc(odorClusterRank)
+% set(gca,'xtick',1:length(pubGlomNames),'xticklabel',string(pubGlomNames),'FontSize',10)
+% xtickangle(30)
+% xlabel('Glomeruli','FontSize',20)
+% ylabel('Cluster #','FontSize',20)
+% title('Odor Glom Rank','FontSize',20)
+% 
+% subplot(3,1,2)
+% imagesc(physClusterRank)
+% set(gca,'xtick',1:length(pubGlomNames),'xticklabel',string(pubGlomNames),'FontSize',10)
+% xtickangle(30)
+% xlabel('Glomeruli','FontSize',20)
+% ylabel('Cluster #','FontSize',20)
+% title('Physical Euclidean Distance Glom Rank','FontSize',20)
+% 
+% subplot(3,1,3)
+% imagesc(shapeClusterRank)
+% set(gca,'xtick',1:length(pubGlomNames),'xticklabel',string(pubGlomNames),'FontSize',10)
+% xtickangle(30)
+% xlabel('Glomeruli','FontSize',20)
+% ylabel('Cluster #','FontSize',20)
+% title('Shape Glom Rank','FontSize',20)
 
-figure;
-subplot(3,1,1)
-imagesc(odorCorrNormed)
-set(gca,'xtick',1:length(pubGlomNames),'xticklabel',string(pubGlomNames),'FontSize',10)
-xtickangle(30)
-xlabel('Glomeruli','FontSize',20)
-ylabel('Cluster #','FontSize',20)
-title('Odor Panel Rank Correlation (Normed)','FontSize',20)
-
-subplot(3,1,2)
-imagesc(physDistNormed)
-set(gca,'xtick',1:length(pubGlomNames),'xticklabel',string(pubGlomNames),'FontSize',10)
-xtickangle(30)
-xlabel('Glomeruli','FontSize',20)
-ylabel('Cluster #','FontSize',20)
-title('Physical Euclidean Distance (Normed)','FontSize',20)
-
-subplot(3,1,3)
-imagesc(shapePriorNormed)
-set(gca,'xtick',1:length(pubGlomNames),'xticklabel',string(pubGlomNames),'FontSize',10)
-xtickangle(30)
-xlabel('Glomeruli','FontSize',20)
-ylabel('Cluster #','FontSize',20)
-title('Shape Score (Normed)','FontSize',20)
 
 
-figure;
-subplot(3,1,1)
-imagesc(odorClusterRank)
-set(gca,'xtick',1:length(pubGlomNames),'xticklabel',string(pubGlomNames),'FontSize',10)
-xtickangle(30)
-xlabel('Glomeruli','FontSize',20)
-ylabel('Cluster #','FontSize',20)
-title('Odor Glom Rank','FontSize',20)
 
-subplot(3,1,2)
-imagesc(physClusterRank)
-set(gca,'xtick',1:length(pubGlomNames),'xticklabel',string(pubGlomNames),'FontSize',10)
-xtickangle(30)
-xlabel('Glomeruli','FontSize',20)
-ylabel('Cluster #','FontSize',20)
-title('Physical Euclidean Distance Glom Rank','FontSize',20)
-
-subplot(3,1,3)
-imagesc(shapeClusterRank)
-set(gca,'xtick',1:length(pubGlomNames),'xticklabel',string(pubGlomNames),'FontSize',10)
-xtickangle(30)
-xlabel('Glomeruli','FontSize',20)
-ylabel('Cluster #','FontSize',20)
-title('Shape Glom Rank','FontSize',20)
-
-figure
-for j=1:length(clusterVolU)
-    p2=patch(isosurface(clusterVolU{j}),'FaceColor',rand(1,3),'EdgeColor','none','FaceAlpha',0.3);
-    isonormals(clusterVolU{j},p2)
-    text(clusterInfoU{j}.Centroid(1),clusterInfoU{j}.Centroid(2),clusterInfoU{j}.Centroid(3),[num2str(j)],'FontSize',15,'FontWeight','Bold')
-    hold on
-end
-%% Use random permutations to try and improve greedy algorithm
+% run classification algorithm
 close all
 
 nshuffles=1000;
@@ -429,42 +428,28 @@ nshuffles=1000;
 % rank.......
 [output] = assignGloms(nshuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr);
 
-[bestv besti]=min(output.optimizedScore);
-clusterAssignment=output.clusterAssignmentHistory{besti};
-glomerulusAssignment=output.glomerulusAssignmentHistory{besti};
-todelete=find(output.optimizedScoreHistory{besti}>output.assignmentThreshold);
-clusterAssignment(todelete)=[];
-glomerulusAssignment(todelete)=[];
+% calculate score for final classification
+for i=1:length(output.totalDistScore)
+   finalScoreForClassifying(i)=nanmedian(0.5*output.distScoreHistory{i}-0.5*output.odorScoreHistory{i});
+end
 
-[bestv besti]=min(0.67*output.totalDistScore+0.0*output.totalShapeScore);
+[bestv besti]=min(finalScoreForClassifying);
 clusterAssignment=output.clusterAssignmentHistory{besti};
 glomerulusAssignment=output.glomerulusAssignmentHistory{besti};
-%todelete=find(output.assignmentScoreTries{besti}>output.assignmentThreshold);
+%todelete=find(output.optimizedScoreHistory{besti}>output.assignmentThreshold);
 %clusterAssignment(todelete)=[];
 %glomerulusAssignment(todelete)=[];
 
 figure
 plot(output.distScoreHistory{besti},output.odorScoreHistory{besti},'o','LineWidth',2)
 hold on
-plot(output.distScoreHistory{besti},output.odorScoreShuffledHistory{besti},'x','LineWidth',2)
+plot(output.distScoreHistory{besti},output.odorScoreShuffledHistory{besti},'rx','LineWidth',2)
 legend('Unshuffled','Shuffled')
 legend boxoff
 xlabel('Normalized Euclidean Distance')
 ylabel('Odor Rank Correlation')
 box off
 set(gca,'FontSize',15)
-
-% figure
-% plot(output.optimizedScore)
-% hold on
-% plot(1:length(output.optimizedScore),output.optimizedScore(1)*ones(1,length(output.optimizedScore)),'k--','LineWidth',2)
-% plot(besti,output.optimizedScore(besti),'ro','LineWidth',2)
-% xlabel('Trial #')
-% ylabel('Total Assignment Score')
-% legend('Trials','Vanilla Greedy','Winner')
-% legend boxoff
-% box off
-% set(gca,'FontSize',15)
 
 figure;
 plot(output.optimizedScore,output.totalOdorScore,'o')
@@ -486,4 +471,4 @@ end
 
 showClusters(clusterVolAssigned,clusterInfoAssigned,clusterLabels);
 
-%save('assignedGlomeruli.mat','output','compositeDist','myORAcrossGlom','pubORAcrossGlom','odorDistNormed','physDistNormed','shapePriorNormed','pubGlomNames')
+save('assignedClusters.mat','output','clusterVolAssigned','clusterInfoAssigned','clusterLabels','besti','clustersManuallyOmitted','omitAtlasZslices','finalScoreForClassifying')
