@@ -50,6 +50,7 @@ for nTries=1:nShuffles
     
     compositeDist(:,slicesToRemove)=NaN;
     
+    % compositeDist copy that will be modified as clusters are assigned
     compositeDistTemp=compositeDist;
     
     assignmentScore=[];
@@ -57,19 +58,22 @@ for nTries=1:nShuffles
     clusterAssignment=[];
     iters=0;
     nassignments=1;
+    % while there are still unassigned clusters
     while sum(any(compositeDistTemp))>0
-        % find glomerulus that minimizes multiplied distance to each cluster
+        % find glomerulus that minimizes composite distance to each cluster
         glomMinimizing=zeros(1,size(compositeDist,1));
         glomMinimizingMatrix=zeros(size(compositeDist,1),size(compositeDist,2));
         for i=1:size(compositeDist,1)
             if any(compositeDistTemp(i,:))
-                %[val ind]=nanmin(compositeDistTemp(i,:));
+                
+                % sort the closest glom matches to the current cluster
                 [val ind]=sort(compositeDistTemp(i,:));
                 nanstoremove=find(isnan(val));
                 val(nanstoremove)=[];
                 ind(nanstoremove)=[];
                 
-                % take top X and randomly permute
+                % take top X matches and randomly permute
+                % if we are past the first iteration
                 if nTries==1
                     val=val(1);
                     ind=ind(1);
@@ -92,6 +96,8 @@ for nTries=1:nShuffles
                     val=val(tempperm1);
                     ind=ind(tempperm1);
                 end
+                % assign the cluster to the glomerulus minimizing (or
+                % randomly chosen non-optimal choice within top glomsToTry
                 glomMinimizing(i)=ind(1);
                 
                 [asdf asdf2]=sort(compositeDistTemp(i,:));
@@ -102,11 +108,15 @@ for nTries=1:nShuffles
             end
         end
         
+        % enumerate all uniquely chosen glomeruli
         uniqueGloms=unique(glomMinimizing);
+        uniqueGloms(uniqueGloms==0)=[];
         
         % find cluster that minimizes composite distance to each glomerulus
+        % This is for any glomeruli that have been assigned to multiple
+        % clusters
         uniqueClusters=zeros(1,(length(uniqueGloms)));
-        for i=2:(length(uniqueGloms))
+        for i=1:(length(uniqueGloms))
             currGlom=uniqueGloms(i);
             currClusters=find(glomMinimizing==currGlom);
             [mymin myind]=sort(compositeDistTemp(currClusters,currGlom));
@@ -151,14 +161,13 @@ for nTries=1:nShuffles
         iters=iters+1;
     end
     
-    todelete=find(glomerulusAssignment==0);
-    glomerulusAssignment(todelete)=[];
-    clusterAssignment(todelete)=[];
-    
-        todelete2=find(clusterAssignment==0);
-    glomerulusAssignment(todelete2)=[];
-    clusterAssignment(todelete2)=[];
-    
+%     todelete=find(glomerulusAssignment==0);
+%     glomerulusAssignment(todelete)=[];
+%     clusterAssignment(todelete)=[];
+%     
+%     todelete2=find(clusterAssignment==0);
+%     glomerulusAssignment(todelete2)=[];
+%     clusterAssignment(todelete2)=[];
     
     % remove high scores (poor fit)
     highScores=find(assignmentScore>assignmentThreshold);
@@ -176,7 +185,7 @@ for nTries=1:nShuffles
     shapeScoreShuffled=zeros(1,length(clusterAssignment));
     
     permutationsForShuffledArray=100;
-    % validate using odor response
+    % validate using odor rank correlation
     for j=1:length(clusterAssignment)
         odorScore(j)=(odorRankCorr(clusterAssignment(j),glomerulusAssignment(j)));
         distScore(j)=(physDistNormed(clusterAssignment(j),glomerulusAssignment(j)));
@@ -206,23 +215,23 @@ for nTries=1:nShuffles
     
     % save prior scores
     odorScoreTries{nTries}=odorScore;
-    totalOdorScore(nTries)=nanmean(odorScore);
+    totalOdorScore(nTries)=nanmedian(odorScore);
 
     distScoreTries{nTries}=distScore;
-    totalDistScore(nTries)=nanmean(distScore);
+    totalDistScore(nTries)=nanmedian(distScore);
 
     shapeScoreTries{nTries}=shapeScore;
-    totalShapeScore(nTries)=nanmean(shapeScore);
+    totalShapeScore(nTries)=nanmedian(shapeScore);
     
     % save shuffled scores
     odorScoreShuffledTries{nTries}=odorScoreShuffled;
-    totalOdorScoreShuffled(nTries)=nanmean(odorScoreShuffled);
+    totalOdorScoreShuffled(nTries)=nanmedian(odorScoreShuffled);
     
     distScoreShuffledTries{nTries}=distScoreShuffled;
-    totalDistScoreShuffled(nTries)=nanmean(distScoreShuffled);
+    totalDistScoreShuffled(nTries)=nanmedian(distScoreShuffled);
     
     shapeScoreShuffledTries{nTries}=shapeScoreShuffled;
-    totalShapeScoreShuffled(nTries)=nanmean(shapeScoreShuffled);
+    totalShapeScoreShuffled(nTries)=nanmedian(shapeScoreShuffled);
     
     if mod(nTries,100)==0
         disp(['completed shuffle ' num2str(nTries) ' of ' num2str(nShuffles)])
@@ -230,26 +239,9 @@ for nTries=1:nShuffles
 end
 disp(['finished. time elapsed = ' num2str(toc) ' seconds'])
 
-[bestv besti]=min(trialScore);
-clusterAssignment=clusterAssignmentTries{besti};
-glomerulusAssignment=glomerulusAssignmentTries{besti};
-todelete=find(assignmentScoreTries{besti}>assignmentThreshold);
-clusterAssignment(todelete)=[];
-glomerulusAssignment(todelete)=[];
 
-[bestv besti]=max(totalOdorScore);
-[bestv besti]=min(0.0*(1-totalOdorScore)+1*totalDistScore+0.0*totalShapeScore);
-clusterAssignment=clusterAssignmentTries{besti};
-glomerulusAssignment=glomerulusAssignmentTries{besti};
-%todelete=find(assignmentScoreTries{besti}>assignmentThreshold);
-%clusterAssignment(todelete)=[];
-%glomerulusAssignment(todelete)=[];
-
-output.clusterAssignmentFinal=clusterAssignment;
-output.glomerulusAssignmentFinal=glomerulusAssignment;
 output.clusterAssignmentHistory=clusterAssignmentTries;
 output.glomerulusAssignmentHistory=glomerulusAssignmentTries;
-output.bestIndex=besti;
 
 output.optimizedScore=trialScore;
 output.optimizedScoreHistory=assignmentScoreTries;
@@ -267,3 +259,5 @@ output.shapeScoreShuffledHistory=shapeScoreShuffledTries;
 output.totalOdorScoreShuffled=totalOdorScoreShuffled;
 output.totalDistScoreShuffled=totalDistScoreShuffled;
 output.totalShapeScoreShuffled=totalShapeScoreShuffled;
+
+output.assignmentThreshold=assignmentThreshold;

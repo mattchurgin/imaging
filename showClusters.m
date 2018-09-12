@@ -1,6 +1,11 @@
-function [] = showClusters(clusterVolU,clusterInfoU)
+function [] = showClusters(clusterVolU,clusterInfoU,labels)
 % showClusters plots clusters contained in the cell array clusterVolU in 3d
+% labels is a cell array of cluster labels.  if labels is not passed in,
+% clusters will be labelled with numbers
 
+if nargin<3
+   labels=[]; 
+end
 figure
 view(3);
 axis tight
@@ -12,5 +17,9 @@ hold on
 for i=1:length(clusterVolU)
     p2=patch(isosurface(clusterVolU{i}),'FaceColor',rand(1,3),'EdgeColor','none','FaceAlpha',0.3);
     isonormals(clusterVolU{i},p2)
-    text(clusterInfoU{i}.Centroid(1),clusterInfoU{i}.Centroid(2),clusterInfoU{i}.Centroid(3),num2str(i),'FontSize',15)
+    if length(labels)<1
+        text(clusterInfoU{i}.Centroid(1),clusterInfoU{i}.Centroid(2),clusterInfoU{i}.Centroid(3),num2str(i),'FontSize',15,'FontWeight','Bold')
+    else
+        text(clusterInfoU{i}.Centroid(1),clusterInfoU{i}.Centroid(2),clusterInfoU{i}.Centroid(3),labels{i},'FontSize',15,'FontWeight','Bold')
+    end
 end

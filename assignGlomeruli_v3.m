@@ -11,19 +11,13 @@ mcolors(2,:)=[0.8500, 0.3250, 0.0980];
 
 % initialization
 leftLobe=0;
-minResponse=0.1; % remove clusters with maximum response less than this
+minResponse=0.0; % remove clusters with maximum response less than this
 showIntermediateFigs=0;
 compressDoORdata=0; % if you want to take log of DooR data to compress (DoOR data is ORN, PNs have compressed signal)
 omitAtlasZSlices=1;
 myPercentage=1; % for normalizing centroid locations
 
-% weights for each prior
-% all 1s for equal weighting
-physDistWeight=1;
-odorWeight=1;
-shapeWeight=1;
-
-filename=uigetfile(); % load processed k means .mat file
+filename=uigetfile(); % load file with clusters and responses
 
 load(filename)
 
@@ -80,30 +74,31 @@ if compressDoORdata
 end
 
 % mean center and normalize published data
-
-% normalized within glomerulus response across odors (preserves relative
-% odor activation within each glomerulus)
-for i=1:size(pubOR,2)
-    if nanstd(pubOR(:,i))>0
-        pubORWithinGlom(:,i)=(pubOR(:,i)-nanmin(pubOR(:,i)))./(nanmax(pubOR(:,i))-nanmin(pubOR(:,i)));
-    else
-        pubORWithinGlom(:,i)=(pubOR(:,i)-nanmin(pubOR(:,i)));
-    end
-end
-
-% normalized across glomerulus response for each odor (preserves relative
-% activation across glomeruli)
-for i=1:size(pubOR,1)
-    if nanstd(pubOR(i,:))>0
-        pubORAcrossGlom(i,:)=(pubOR(i,:)-nanmin(pubOR(i,:)))./(max(pubOR(i,:))-min(pubOR(i,:)));
-    else
-        pubORAcrossGlom(i,:)=(pubOR(i,:)-nanmin(pubOR(i,:)));
-    end
-end
+% 
+% % normalized within glomerulus response across odors (preserves relative
+% % odor activation within each glomerulus)
+% for i=1:size(pubOR,2)
+%     if nanstd(pubOR(:,i))>0
+%         pubORWithinGlom(:,i)=(pubOR(:,i)-nanmin(pubOR(:,i)))./(nanmax(pubOR(:,i))-nanmin(pubOR(:,i)));
+%     else
+%         pubORWithinGlom(:,i)=(pubOR(:,i)-nanmin(pubOR(:,i)));
+%     end
+% end
+% 
+% % normalized across glomerulus response for each odor (preserves relative
+% % activation across glomeruli)
+% for i=1:size(pubOR,1)
+%     if nanstd(pubOR(i,:))>0
+%         pubORAcrossGlom(i,:)=(pubOR(i,:)-nanmin(pubOR(i,:)))./(max(pubOR(i,:))-min(pubOR(i,:)));
+%     else
+%         pubORAcrossGlom(i,:)=(pubOR(i,:)-nanmin(pubOR(i,:)));
+%     end
+% end
 
 % LOAD AND PREPROCESS CLUSTER DATA
 % calculate max response over all time points
 maxResponse=max(grnResponse,[],3);
+%maxResponse=sum(grnResponse,3);
 myOR=maxResponse(2:13,:); % omit air (odor 1
 rawClustersToDelete=max(myOR)<minResponse;
 myOR(:,rawClustersToDelete)=NaN;
@@ -125,28 +120,28 @@ cZ(rawClustersToDelete)=NaN;
 cX=(cX-prctile(cX,myPercentage))/(prctile(cX,100-myPercentage)-prctile(cX,myPercentage));
 cY=(cY-prctile(cY,myPercentage))/(prctile(cY,100-myPercentage)-prctile(cY,myPercentage));
 cZ=(cZ-prctile(cZ,myPercentage))/(prctile(cZ,100-myPercentage)-prctile(cZ,myPercentage));
-
-% mean center and normalize each cluster's odor response
-for i=1:size(myOR,2)
-    if std(myOR(:,i))>0
-        myORWithinGlom(:,i)=(myOR(:,i)-nanmin(myOR(:,i)))./(nanmax(myOR(:,i))-nanmin(myOR(:,i)));
-    else
-        myORWithinGlom(:,i)=(myOR(:,i)-nanmin(myOR(:,i)));
-    end
-end
-
-for i=1:size(myOR,1)
-    if nanstd(myOR(i,:))>0
-        myORAcrossGlom(i,:)=(myOR(i,:)-nanmin(myOR(i,:)))./(nanmax(myOR(i,:))-nanmin(myOR(i,:)));
-    else
-        myORAcrossGlom(i,:)=(myOR(i,:)-nanmin(myOR(i,:)));
-    end
-end
+% 
+% % mean center and normalize each cluster's odor response
+% for i=1:size(myOR,2)
+%     if std(myOR(:,i))>0
+%         myORWithinGlom(:,i)=(myOR(:,i)-nanmin(myOR(:,i)))./(nanmax(myOR(:,i))-nanmin(myOR(:,i)));
+%     else
+%         myORWithinGlom(:,i)=(myOR(:,i)-nanmin(myOR(:,i)));
+%     end
+% end
+% 
+% for i=1:size(myOR,1)
+%     if nanstd(myOR(i,:))>0
+%         myORAcrossGlom(i,:)=(myOR(i,:)-nanmin(myOR(i,:)))./(nanmax(myOR(i,:))-nanmin(myOR(i,:)));
+%     else
+%         myORAcrossGlom(i,:)=(myOR(i,:)-nanmin(myOR(i,:)));
+%     end
+% end
 
 % create sorted versions of odor response matrices
 % can be used to measure rank comparison between classified and published
 % odor responses
-myORRank=NaN*zeros(size(myORAcrossGlom,1),size(myORAcrossGlom,2));
+myORRank=NaN*zeros(size(myOR,1),size(myOR,2));
 for i=1:size(myOR,2)
     [vals inds]=sort(myOR(:,i));
     % remove nans
@@ -160,7 +155,7 @@ for i=1:size(myOR,2)
     end
 end
 
-pubORRank=NaN*zeros(size(pubORAcrossGlom,1),size(pubORAcrossGlom,2));
+pubORRank=NaN*zeros(size(pubOR,1),size(pubOR,2));
 for i=1:size(pubOR,2)
     [vals inds]=sort(pubOR(:,i));
     % remove nans
@@ -172,18 +167,20 @@ for i=1:size(pubOR,2)
     for j=1:length(inds)
         pubORRank(inds(j),i)=j;
     end
+    
+    numOdorsAvailablePerGlom(i)=sum(isfinite(pubORRank(:,i)));
 end
 
 % calculate spearman (rank) correlation between each cluster and each
 % glomerulus
 odorRankCorr=NaN*zeros(size(myORRank,2),size(pubORRank,2));
-odorRankCorrP=NaN*zeros(size(myORRank,2),size(pubORRank,2));
 for i=1:size(myORRank,2)
     for j=1:size(pubORRank,2)
         myORtemp=myORRank(:,i);
         pubORtemp=pubORRank(:,j);
         
         availableOdors=find(isfinite(pubORtemp));
+        
         if any(availableOdors)
             myORavailable=myORtemp(availableOdors);
             pubORavailable=pubORtemp(availableOdors);
@@ -192,10 +189,14 @@ for i=1:size(myORRank,2)
             [vals inds]=sort(myORavailable);
             [myC myP]=corrcoef(pubORavailable,inds);
             odorRankCorr(i,j)=myC(1,2);
-            odorRankCorrP(i,j)=myP(1,2);
         end
     end
 end
+
+% omit odor rank correlations when less than min odors were available
+minOdors=6;
+glomsWithLowOdorData=numOdorsAvailablePerGlom<minOdors;
+odorRankCorr(:,glomsWithLowOdorData)=NaN;
 
 % visualize centroids
 figure
@@ -210,13 +211,12 @@ end
 plot3(cX,cY,cZ,'ro')
 
 % CALCULATE EUCLIDEAN DISTANCE BETWEEN EACH CLUSTER AND PUBLISHED DATA
-% FOR PHYSICAL CENTROID DISTANCE AND ODOR RESPONSE SPACE
-odorDist=NaN*zeros(size(myOR,2),size(pubOR,2));
-odorDistAcross=NaN*zeros(size(myOR,2),size(pubOR,2));
+% FOR PHYSICAL CENTROID DISTANCE 
+%odorDist=NaN*zeros(size(myOR,2),size(pubOR,2));
 physDist=NaN*zeros(size(myOR,2),size(pubOR,2));
 for i=1:size(myOR,2)
     for j=1:size(pubOR,2)
-        odorDist(i,j)=sqrt(nansum((myORAcrossGlom(:,i)-pubORAcrossGlom(:,j)).^2))/sqrt(sum(isfinite(pubORAcrossGlom(:,j))));
+        %odorDist(i,j)=sqrt(nansum((myORAcrossGlom(:,i)-pubORAcrossGlom(:,j)).^2))/sqrt(sum(isfinite(pubORAcrossGlom(:,j))));
         physDist(i,j)=sqrt((cX(i)-pubX(j)).^2+(cY(i)-pubY(j)).^2+(cZ(i)-pubZ(j)).^2);
     end
 end
@@ -259,7 +259,7 @@ for i=1:size(pubOR,2)
     end
 end
 
-% use maximum projection of ech cluster and convolve with door glomeruluar
+% use maximum projection of ech cluster and perform cross-correlation with door glomeruluar
 % atlas to find cluster that maximizes shape correlation
 shapePriorNorm=zeros(size(myOR,2),size(pubOR,2));
 
@@ -286,17 +286,17 @@ end
 disp(['time elapsed to compute cross-correlations: ' num2str(toc) ' seconds'])
 
 %% combine priors and assign glomeruli
-% normalize distance matrices between 0 and 1
-odorDistNormed=(odorDist-min(odorDist(:)))/(max(odorDist(:))-min(odorDist(:)));
-odorCorrNormed=1-(odorRankCorr-min(odorRankCorr(:)))/(max(odorRankCorr(:))-min(odorRankCorr(:)));
-physDistNormed=(physDist-prctile(physDist(:),1))/(max(physDist(:))-min(physDist(:)));
+% normalize distance matrices 
+%odorDistNormed=(odorDist-min(odorDist(:)))/(max(odorDist(:))-min(odorDist(:)));
+odorCorrNormed=1-(odorRankCorr+1)/2;
+physDistNormed=physDist/max(physDist(:));
 
 shapePriorN=1-shapePriorNorm; % flip shape prior so lower scores are better
-shapePriorNormed=(shapePriorN-prctile(shapePriorN(:),1))/(max(shapePriorN(:))-min(shapePriorN(:)));
+shapePriorNormed=(shapePriorN)/(max(shapePriorN(:)));
 
 % make sure minimum is greater than zero
-physDistNormed=physDistNormed-2*min(physDistNormed(:));
-shapePriorNormed=shapePriorNormed-2*min(shapePriorNormed(:));
+%physDistNormed=physDistNormed-2*min(physDistNormed(:));
+%shapePriorNormed=shapePriorNormed-2*min(shapePriorNormed(:));
 
 toFillP=find(any(physDistNormed)==0);
 physDistNormed(:,toFillP)=nanmean(physDistNormed(:));
@@ -420,43 +420,70 @@ for j=1:length(clusterVolU)
     hold on
 end
 %% Use random permutations to try and improve greedy algorithm
-nshuffles=1;
+close all
+
+nshuffles=1000;
 % what if you use cluster ranks as distance input?  also, do the thing you
 % said in your email, i.e., create three composite dists and try to
 % optimize each, then choose the one with the lowest total score based on
 % rank.......
 [output] = assignGloms(nshuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr);
 
+[bestv besti]=min(output.optimizedScore);
+clusterAssignment=output.clusterAssignmentHistory{besti};
+glomerulusAssignment=output.glomerulusAssignmentHistory{besti};
+todelete=find(output.optimizedScoreHistory{besti}>output.assignmentThreshold);
+clusterAssignment(todelete)=[];
+glomerulusAssignment(todelete)=[];
+
+[bestv besti]=min(0.67*output.totalDistScore+0.0*output.totalShapeScore);
+clusterAssignment=output.clusterAssignmentHistory{besti};
+glomerulusAssignment=output.glomerulusAssignmentHistory{besti};
+%todelete=find(output.assignmentScoreTries{besti}>output.assignmentThreshold);
+%clusterAssignment(todelete)=[];
+%glomerulusAssignment(todelete)=[];
+
 figure
-plot(output.optimizedScore)
+plot(output.distScoreHistory{besti},output.odorScoreHistory{besti},'o','LineWidth',2)
 hold on
-plot(1:length(output.optimizedScore),output.optimizedScore(1)*ones(1,length(output.optimizedScore)),'k--','LineWidth',2)
-plot(output.bestIndex,output.optimizedScore(output.bestIndex),'ro','LineWidth',2)
-xlabel('Trial #')
-ylabel('Total Assignment Score')
-legend('Trials','Vanilla Greedy','Winner')
+plot(output.distScoreHistory{besti},output.odorScoreShuffledHistory{besti},'x','LineWidth',2)
+legend('Unshuffled','Shuffled')
 legend boxoff
+xlabel('Normalized Euclidean Distance')
+ylabel('Odor Rank Correlation')
 box off
 set(gca,'FontSize',15)
+
+% figure
+% plot(output.optimizedScore)
+% hold on
+% plot(1:length(output.optimizedScore),output.optimizedScore(1)*ones(1,length(output.optimizedScore)),'k--','LineWidth',2)
+% plot(besti,output.optimizedScore(besti),'ro','LineWidth',2)
+% xlabel('Trial #')
+% ylabel('Total Assignment Score')
+% legend('Trials','Vanilla Greedy','Winner')
+% legend boxoff
+% box off
+% set(gca,'FontSize',15)
 
 figure;
 plot(output.optimizedScore,output.totalOdorScore,'o')
 hold on
 plot(output.optimizedScore,output.totalOdorScoreShuffled,'r.')
-plot(output.optimizedScore(1),output.totalOdorScoreShuffled(1),'ko','LineWidth',2)
+plot(output.optimizedScore(besti),output.totalOdorScore(besti),'ko','LineWidth',3)
 legend('Unshuffled','Shuffled')
 xlabel('Total Assignment Score')
-ylabel('Total Odor Score')
+ylabel('Median Odor Rank Correlation')
 legend boxoff
 box off
 set(gca,'FontSize',15)
 
-figure
-for j=1:length(output.glomerulusAssignmentFinal)
-    p2=patch(isosurface(clusterVolU{output.clusterAssignmentFinal(j)}),'FaceColor',rand(1,3),'EdgeColor','none','FaceAlpha',0.3);
-    isonormals(clusterVolU{output.clusterAssignmentFinal(j)},p2)
-    text(clusterInfoU{output.clusterAssignmentFinal(j)}.Centroid(1),clusterInfoU{output.clusterAssignmentFinal(j)}.Centroid(2),clusterInfoU{output.clusterAssignmentFinal(j)}.Centroid(3),pubGlomNames{output.glomerulusAssignmentFinal(j)},'FontSize',15,'FontWeight','Bold')
-    hold on
+for j=1:length(glomerulusAssignment)
+    clusterVolAssigned{j}=clusterVolU{clusterAssignment(j)};
+    clusterInfoAssigned{j}=clusterInfoU{clusterAssignment(j)};
+    clusterLabels{j}=pubGlomNames{glomerulusAssignment(j)};
 end
+
+showClusters(clusterVolAssigned,clusterInfoAssigned,clusterLabels);
 
 %save('assignedGlomeruli.mat','output','compositeDist','myORAcrossGlom','pubORAcrossGlom','odorDistNormed','physDistNormed','shapePriorNormed','pubGlomNames')
