@@ -8,8 +8,9 @@ function [output] = assignGloms(nShuffles,odorCorrNormed,physDistNormed,shapePri
 %  minimum assignment
 % nShuffles is number of trials to do (default is one)
 
-shapeWeightTries=zeros(1,nShuffles);
-physDistWeightTries=zeros(1,nShuffles);
+physDistWeight=0.63;
+shapeWeight=0.0;
+
 
 glomerulusAssignmentTries=cell(1,nShuffles);
 clusterAssignmentTries=cell(1,nShuffles);
@@ -27,28 +28,15 @@ glomsToTry=5;  % for each cluster, which top X gloms to consider
 clustersToTry=5; % for each glomerulus, which top X clusters to consider
 probToPermute=0.25; % fraction of time to permute [0,1]
 
+compositeDist =  physDistWeight*(physDistNormed)+shapeWeight*shapePriorNormed;
+
+assignmentThreshold=prctile(compositeDist(:),20);
+assignmentThreshold=Inf;
+
+compositeDist(:,slicesToRemove)=NaN;
+
 tic
 for nTries=1:nShuffles
-    
-    if nTries>1
-        shapeWeight=rand/2;
-        physDistWeight=1-shapeWeight;
-        physDistWeight=0.63;
-        shapeWeight=0.37;
-    else
-        physDistWeight=0.63;
-        shapeWeight=0.37;
-    end
-    shapeWeightTries(nTries)=shapeWeight;
-    physDistWeightTries(nTries)=physDistWeight;
-   
-    compositeDist =  physDistWeight*(physDistNormed)+shapeWeight*shapePriorNormed;
-    
-    assignmentThreshold=prctile(compositeDist(:),20);
-    assignmentThreshold=Inf;
-    
-    compositeDist(:,slicesToRemove)=NaN;
-    
     % compositeDist copy that will be modified as clusters are assigned
     compositeDistTemp=compositeDist;
     
@@ -57,6 +45,7 @@ for nTries=1:nShuffles
     clusterAssignment=[];
     iters=0;
     nassignments=1;
+    
     % while there are still unassigned clusters
     while sum(any(compositeDistTemp))>0
         % find glomerulus that minimizes composite distance to each cluster
@@ -183,7 +172,7 @@ for nTries=1:nShuffles
     shapeScore=zeros(1,length(clusterAssignment));
     shapeScoreShuffled=zeros(1,length(clusterAssignment));
     
-    permutationsForShuffledArray=100;
+    permutationsForShuffledArray=1;
     % validate using odor rank correlation
     for j=1:length(clusterAssignment)
         odorScore(j)=(odorRankCorr(clusterAssignment(j),glomerulusAssignment(j)));
@@ -196,12 +185,12 @@ for nTries=1:nShuffles
         for perms=1:permutationsForShuffledArray
             permutedArray=randperm(length(clusterAssignment));
             odorScoreShuffledTemp(perms)=(odorRankCorr(clusterAssignment(j),glomerulusAssignment(permutedArray(j))));
-            distPriorScoreShuffledTempTemp(perms)=(physDistNormed(clusterAssignment(j),glomerulusAssignment((j))));
-            shapePriorScoreShuffledTemp(perms)=(shapePriorNormed(clusterAssignment(j),glomerulusAssignment((j))));
+            distPriorScoreShuffledTemp(perms)=(physDistNormed(clusterAssignment(j),glomerulusAssignment(permutedArray(j))));
+            shapePriorScoreShuffledTemp(perms)=(shapePriorNormed(clusterAssignment(j),glomerulusAssignment(permutedArray(j))));
         end
         
         odorScoreShuffled(j)=nanmean(odorScoreShuffledTemp);
-        distScoreShuffled(j)=nanmean(distPriorScoreShuffledTempTemp);
+        distScoreShuffled(j)=nanmean(distPriorScoreShuffledTemp);
         shapeScoreShuffled(j)=nanmean(shapePriorScoreShuffledTemp);
     end
     

@@ -229,11 +229,13 @@ else % not using parallel processing toolbox
                 [kmeansOuttemp,Ctemp,sumdtemp] = kmeans(unwrappedReduced,numKmeans(j),'MaxIter',maxIteration,'Display','final','Distance','sqeuclidean');
                 if useGpu
                     kmeansOut{j}{jj}=gather(reshape(kmeansOuttemp,[imageSize(1),imageSize(2),imageSize(3)]));
+                    C{j}{jj}=gather(Ctemp);
+                    sumd{jj}=gather(sumdtemp);
                 else
                     kmeansOut{j}{jj}=reshape(kmeansOuttemp,[imageSize(1),imageSize(2),imageSize(3)]);
+                    C{j}{jj}=Ctemp;
+                    sumd{jj}=sumdtemp;
                 end
-                C{j}{jj}=Ctemp;
-                sumd{j}{jj}=sumdtemp;
                 disp(['processed kmeans for k = ' num2str(numKmeans(j)) ', Replicate ' num2str(jj) ' of ' num2str(numReplicates)])
             end
         end
@@ -242,11 +244,13 @@ else % not using parallel processing toolbox
             [kmeansOuttemp,Ctemp,sumdtemp] = kmeans(unwrappedReduced,numKmeans,'MaxIter',maxIteration,'Display','iter','Distance','sqeuclidean');
             if useGpu
                 kmeansOut{jj}=gather(reshape(kmeansOuttemp,[imageSize(1),imageSize(2),imageSize(3)]));
+                C{j}{jj}=gather(Ctemp);
+                sumd{jj}=gather(sumdtemp);
             else
                 kmeansOut{jj}=reshape(kmeansOuttemp,[imageSize(1),imageSize(2),imageSize(3)]);
+                C{j}{jj}=Ctemp;
+                sumd{jj}=sumdtemp;
             end
-            C{j}{jj}=Ctemp;
-            sumd{jj}=sumdtemp;
             disp(['processed kmeans for k = ' num2str(numKmeans) ', Replicate ' num2str(jj) ' of ' num2str(numReplicates)])
         end
     end

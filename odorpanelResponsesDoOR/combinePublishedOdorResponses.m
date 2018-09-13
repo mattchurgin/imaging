@@ -172,8 +172,13 @@ for i=1:dummyi-1
     currdata = textscan(fid, '%s','Delimiter',','); % you will need to change the number   of values to match your file %f for numbers and %s for strings.
     fclose(fid);
     for j=5:4:length(currdata{1})
-        odorResponses(str2num(str2num(currdata{1}{j})),i)=str2num(currdata{1}{j+3});
-        glomNames{str2num(str2num(currdata{1}{j}))}=str2num(currdata{1}{j+1});
+        try
+            odorResponses(str2num(str2num(currdata{1}{j})),i)=str2num(currdata{1}{j+3});
+            glomNames{str2num(str2num(currdata{1}{j}))}=str2num(currdata{1}{j+1});
+        catch
+            odorResponses(str2num(currdata{1}{j}),i)=str2num(currdata{1}{j+3});
+            glomNames{str2num(currdata{1}{j})}=currdata{1}{j+1};
+        end
     end
 end
 

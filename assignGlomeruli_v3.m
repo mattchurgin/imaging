@@ -1,24 +1,23 @@
 % assign glomeruli v3
 % Matt Churgin, August 2018
-%% load data and compute spatial and odor response priors
+%% load data and compute spatial and odor response distance and rank correlation matrices
 
 clear all
 close all
 
-% colors!
+% colors for plotting
 mcolors(1,:)=[0, 0.4470, 0.7410];
 mcolors(2,:)=[0.8500, 0.3250, 0.0980];
 
 % initialization
 leftLobe=input('right lobe (0) or left lobe (1)? ');
 minResponse=0.0; % remove clusters with maximum response less than this
-showIntermediateFigs=0;
-compressDoORdata=0; % if you want to take log of DooR data to compress (DoOR data is ORN, PNs have compressed signal)
 myPercentage=1; % for normalizing centroid locations
+minOdors=4; % omit odor rank correlations when less than min odors are available
 
-filename=uigetfile(); % load file with clusters and responses
+clusterfilename=uigetfile(); % load file with clusters and responses
 
-load(filename)
+load(clusterfilename)
 showClusters(clusterVolU,clusterInfoU)
 
 clustersManuallyOmitted=input('Any clusters to omit? ');
@@ -65,14 +64,6 @@ pubZ=(pubZ-prctile(pubZ,myPercentage))/(prctile(pubZ,100-myPercentage)-prctile(p
 for j=1:length(pubNames)
     pubNames{j}=num2str(pubNames{j});
     pubGlomNames{j}=num2str(pubGlomNames{j});
-end
-
-if compressDoORdata
-    % DoOR data is taken from ORNs.  PNs are known to amplify weak signal.
-    % Therefore, we compress pubOR signal by taking log of published odor response
-    pubOR=log10(pubOR);
-    pubOR(isinf(pubOR))=NaN;
-    pubOR=pubOR-min(min(pubOR));
 end
 
 % mean center and normalize published data
@@ -196,8 +187,7 @@ for i=1:size(myORRank,2)
     end
 end
 
-% omit odor rank correlations when less than min odors were available
-minOdors=6;
+fullOdorRankCorr=odorRankCorr;
 glomsWithLowOdorData=numOdorsAvailablePerGlom<minOdors;
 odorRankCorr(:,glomsWithLowOdorData)=NaN;
 
@@ -288,7 +278,13 @@ for i=1:size(myOR,2)
 end
 disp(['time elapsed to compute cross-correlations: ' num2str(toc) ' seconds'])
 
+save('intermediateAssignment.mat', 'myOR', 'pubOR', 'shapePriorNorm', 'physDist', 'fullOdorRankCorr', 'odorRankCorr', 'rawClustersToDelete','slicesToRemove', 'pubNames', 'pubGlomNames','clusterfilename','clustersManuallyOmitted','omitAtlasZslices')
 %% combine priors and assign glomeruli
+clear all
+load intermediateAssignment
+load(clusterfilename)
+
+showIntermediateFigs=0;
 % normalize distance matrices 
 %odorDistNormed=(odorDist-min(odorDist(:)))/(max(odorDist(:))-min(odorDist(:)));
 odorCorrNormed=1-(odorRankCorr+1)/2;
@@ -415,22 +411,23 @@ end
 % ylabel('Cluster #','FontSize',20)
 % title('Shape Glom Rank','FontSize',20)
 
-
-
-
 % run classification algorithm
 close all
 
-nshuffles=1000;
+nshuffles=10000;
 % what if you use cluster ranks as distance input?  also, do the thing you
 % said in your email, i.e., create three composite dists and try to
 % optimize each, then choose the one with the lowest total score based on
 % rank.......
 [output] = assignGloms(nshuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr);
 
+%% calculate final score for classifying and save
+distWeight=0.5;
+shapeWeight=0;
+odorWeight=0.0;
 % calculate score for final classification
 for i=1:length(output.totalDistScore)
-   finalScoreForClassifying(i)=nanmedian(0.5*output.distScoreHistory{i}-0.5*output.odorScoreHistory{i});
+   finalScoreForClassifying(i)=nanmedian(distWeight*output.distScoreHistory{i}+shapeWeight*output.shapeScoreHistory{i}-odorWeight*output.odorScoreHistory{i});
 end
 
 [bestv besti]=min(finalScoreForClassifying);
@@ -471,4 +468,4 @@ end
 
 showClusters(clusterVolAssigned,clusterInfoAssigned,clusterLabels);
 
-save('assignedClusters.mat','output','clusterVolAssigned','clusterInfoAssigned','clusterLabels','besti','clustersManuallyOmitted','omitAtlasZslices','finalScoreForClassifying')
+save(['assignedClusters_d' num2str(distWeight) '_s' num2str(shapeWeight) '_o' num2str(odorWeight) '.mat'],'output','clusterVolAssigned','clusterInfoAssigned','clusterLabels','besti','odorWeight','distWeight','shapeWeight','finalScoreForClassifying')
