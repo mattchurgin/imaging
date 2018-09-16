@@ -11,9 +11,9 @@ mcolors(2,:)=[0.8500, 0.3250, 0.0980];
 
 % initialization
 leftLobe=input('right lobe (0) or left lobe (1)? ');
-minResponse=0.0; % remove clusters with maximum response less than this
+minResponse=0.1; % remove clusters with maximum response less than this
 myPercentage=1; % for normalizing centroid locations
-minOdors=4; % omit odor rank correlations when less than min odors are available
+minOdors=4; % omit odor rank correlations when less than min odors are available in DOOR dataset
 
 clusterfilename=uigetfile(); % load file with clusters and responses
 
@@ -66,32 +66,12 @@ for j=1:length(pubNames)
     pubGlomNames{j}=num2str(pubGlomNames{j});
 end
 
-% mean center and normalize published data
-% 
-% % normalized within glomerulus response across odors (preserves relative
-% % odor activation within each glomerulus)
-% for i=1:size(pubOR,2)
-%     if nanstd(pubOR(:,i))>0
-%         pubORWithinGlom(:,i)=(pubOR(:,i)-nanmin(pubOR(:,i)))./(nanmax(pubOR(:,i))-nanmin(pubOR(:,i)));
-%     else
-%         pubORWithinGlom(:,i)=(pubOR(:,i)-nanmin(pubOR(:,i)));
-%     end
-% end
-% 
-% % normalized across glomerulus response for each odor (preserves relative
-% % activation across glomeruli)
-% for i=1:size(pubOR,1)
-%     if nanstd(pubOR(i,:))>0
-%         pubORAcrossGlom(i,:)=(pubOR(i,:)-nanmin(pubOR(i,:)))./(max(pubOR(i,:))-min(pubOR(i,:)));
-%     else
-%         pubORAcrossGlom(i,:)=(pubOR(i,:)-nanmin(pubOR(i,:)));
-%     end
-% end
-
 % LOAD AND PREPROCESS CLUSTER DATA
 % calculate max response over all time points
 maxResponse=max(grnResponse,[],3);
-%maxResponse=sum(grnResponse,3);
+grnResponsePositive=grnResponse;
+grnResponsePositive(grnResponsePositive<0)=0;
+sumResponse=sum(grnResponsePositive,3);
 myOR=maxResponse(2:13,:); % omit air (odor 1
 rawClustersToDelete=max(myOR)<minResponse;
 rawClustersToDelete(clustersManuallyOmitted)=1;
@@ -114,23 +94,6 @@ cZ(rawClustersToDelete)=NaN;
 cX=(cX-prctile(cX,myPercentage))/(prctile(cX,100-myPercentage)-prctile(cX,myPercentage));
 cY=(cY-prctile(cY,myPercentage))/(prctile(cY,100-myPercentage)-prctile(cY,myPercentage));
 cZ=(cZ-prctile(cZ,myPercentage))/(prctile(cZ,100-myPercentage)-prctile(cZ,myPercentage));
-% 
-% % mean center and normalize each cluster's odor response
-% for i=1:size(myOR,2)
-%     if std(myOR(:,i))>0
-%         myORWithinGlom(:,i)=(myOR(:,i)-nanmin(myOR(:,i)))./(nanmax(myOR(:,i))-nanmin(myOR(:,i)));
-%     else
-%         myORWithinGlom(:,i)=(myOR(:,i)-nanmin(myOR(:,i)));
-%     end
-% end
-% 
-% for i=1:size(myOR,1)
-%     if nanstd(myOR(i,:))>0
-%         myORAcrossGlom(i,:)=(myOR(i,:)-nanmin(myOR(i,:)))./(nanmax(myOR(i,:))-nanmin(myOR(i,:)));
-%     else
-%         myORAcrossGlom(i,:)=(myOR(i,:)-nanmin(myOR(i,:)));
-%     end
-% end
 
 % create sorted versions of odor response matrices
 % can be used to measure rank comparison between classified and published
@@ -175,7 +138,7 @@ for i=1:size(myORRank,2)
         
         availableOdors=find(isfinite(pubORtemp));
         
-        if any(availableOdors)
+        if any(availableOdors) && any(myORtemp)
             myORavailable=myORtemp(availableOdors);
             pubORavailable=pubORtemp(availableOdors);
             
@@ -209,7 +172,6 @@ plot3(cX,cY,cZ,'ro')
 physDist=NaN*zeros(size(myOR,2),size(pubOR,2));
 for i=1:size(myOR,2)
     for j=1:size(pubOR,2)
-        %odorDist(i,j)=sqrt(nansum((myORAcrossGlom(:,i)-pubORAcrossGlom(:,j)).^2))/sqrt(sum(isfinite(pubORAcrossGlom(:,j))));
         physDist(i,j)=sqrt((cX(i)-pubX(j)).^2+(cY(i)-pubY(j)).^2+(cZ(i)-pubZ(j)).^2);
     end
 end
@@ -278,7 +240,7 @@ for i=1:size(myOR,2)
 end
 disp(['time elapsed to compute cross-correlations: ' num2str(toc) ' seconds'])
 
-save('intermediateAssignment.mat', 'myOR', 'pubOR', 'shapePriorNorm', 'physDist', 'fullOdorRankCorr', 'odorRankCorr', 'rawClustersToDelete','slicesToRemove', 'pubNames', 'pubGlomNames','clusterfilename','clustersManuallyOmitted','omitAtlasZslices')
+save('intermediateAssignment.mat', 'myOR', 'pubOR', 'shapePriorNorm', 'physDist', 'fullOdorRankCorr', 'odorRankCorr', 'rawClustersToDelete','slicesToRemove', 'pubNames', 'pubGlomNames','clusterfilename','clustersManuallyOmitted','omitAtlasZslices','minResponse')
 %% combine priors and assign glomeruli
 clear all
 load intermediateAssignment
@@ -414,17 +376,18 @@ end
 % run classification algorithm
 close all
 
-nshuffles=10000;
+nshuffles=100000;
 % what if you use cluster ranks as distance input?  also, do the thing you
 % said in your email, i.e., create three composite dists and try to
 % optimize each, then choose the one with the lowest total score based on
 % rank.......
-[output] = assignGloms(nshuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr);
+%[output] = assignGloms(nshuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr);
+[output] = assignGlomsBetterRandomization(nshuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr);
 
 %% calculate final score for classifying and save
 distWeight=0.5;
+odorWeight=0.25;
 shapeWeight=0;
-odorWeight=0.0;
 % calculate score for final classification
 for i=1:length(output.totalDistScore)
    finalScoreForClassifying(i)=nanmedian(distWeight*output.distScoreHistory{i}+shapeWeight*output.shapeScoreHistory{i}-odorWeight*output.odorScoreHistory{i});
@@ -468,4 +431,4 @@ end
 
 showClusters(clusterVolAssigned,clusterInfoAssigned,clusterLabels);
 
-save(['assignedClusters_d' num2str(distWeight) '_s' num2str(shapeWeight) '_o' num2str(odorWeight) '.mat'],'output','clusterVolAssigned','clusterInfoAssigned','clusterLabels','besti','odorWeight','distWeight','shapeWeight','finalScoreForClassifying')
+save(['assignedClustersBetterRandomization_d' num2str(distWeight) '_s' num2str(shapeWeight) '_o' num2str(odorWeight) '_minResponse' num2str(minResponse) '.mat'],'output','clusterVolAssigned','clusterInfoAssigned','clusterLabels','besti','odorWeight','distWeight','shapeWeight','finalScoreForClassifying')
