@@ -28,6 +28,9 @@ totalShapeScoreShuffled=zeros(1,nShuffles);
 
 glomsToTry=5;  % for each cluster, which top X gloms to consider
 clustersToTry=5; % for each glomerulus, which top X clusters to consider
+
+% create lookup table for how often to select the top glomsToTry and top
+% clustersToTry matches.  Use a linear probability
 glomSelector=[];
 clusterSelector=[];
 for i=1:glomsToTry
@@ -36,7 +39,7 @@ end
 for i=1:clustersToTry
    clusterSelector=[clusterSelector i*ones(1,clustersToTry+1-i)]; 
 end
-probToPermute=0.25; % fraction of time to permute [0,1]
+probToPermute=1; % fraction of time to permute [0,1]
 
 compositeDist =  physDistWeight*(physDistNormed)+shapeWeight*shapePriorNormed;
 
@@ -80,19 +83,19 @@ for nTries=1:nShuffles
                         val=val(1:glomsToTry);
                         ind=ind(1:glomsToTry);
                         if rand<probToPermute
-                            tempperm1=randperm(glomsToTry);
+                            tempperm1=randperm(length(glomSelector));
                         else
                             tempperm1=1:glomsToTry;
                         end
                     else
                         if rand<probToPermute
-                            tempperm1=randperm(length(val));
+                            tempperm1=randperm(length(find(glomSelector<=length(val))));
                         else
                             tempperm1=1:length(val);
                         end
                     end
-                    val=val(tempperm1);
-                    ind=ind(tempperm1);
+                    val=val(glomSelector(tempperm1(1)));
+                    ind=ind(glomSelector(tempperm1(1)));
                 end
                 % assign the cluster to the glomerulus minimizing (or
                 % randomly chosen non-optimal choice within top glomsToTry
@@ -130,7 +133,7 @@ for nTries=1:nShuffles
             else
                 if length(mymin)>=clustersToTry
                     if rand<probToPermute
-                        tempperm=randperm(clustersToTry);
+                        tempperm=randperm(length(clusterSelector));
                     else
                         tempperm=1:clustersToTry;
                     end
@@ -138,13 +141,13 @@ for nTries=1:nShuffles
                     myind=myind(1:clustersToTry);
                 else
                     if rand<probToPermute
-                        tempperm=randperm(length(mymin));
+                        tempperm=randperm(length(find(clusterSelector<=length(mymin))));
                     else
                         tempperm=1:length(mymin);
                     end
                 end
-                mymin=mymin(tempperm);
-                myind=myind(tempperm);
+                mymin=mymin(clusterSelector(tempperm(1)));
+                myind=myind(clusterSelector(tempperm(1)));
             end
             assignmentScore(nassignments)=mymin(1);
             

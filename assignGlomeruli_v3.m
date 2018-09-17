@@ -373,7 +373,7 @@ end
 % ylabel('Cluster #','FontSize',20)
 % title('Shape Glom Rank','FontSize',20)
 
-% run classification algorithm
+% run classification
 close all
 
 nshuffles=100000;
@@ -381,12 +381,12 @@ nshuffles=100000;
 % said in your email, i.e., create three composite dists and try to
 % optimize each, then choose the one with the lowest total score based on
 % rank.......
-%[output] = assignGloms(nshuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr);
-[output] = assignGlomsBetterRandomization(nshuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr);
+
+[output] = assignGloms(nshuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr);
 
 %% calculate final score for classifying and save
 distWeight=0.5;
-odorWeight=0.25;
+odorWeight=0.0;
 shapeWeight=0;
 % calculate score for final classification
 for i=1:length(output.totalDistScore)
