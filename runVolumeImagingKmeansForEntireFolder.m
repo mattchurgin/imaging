@@ -29,21 +29,21 @@ for days=1:length(daysToProcess)
         cd(currFolders(i).name)
         if exist('leftLobe')
             try
-            for j=1:length(folderToRunKmeansOn)
-                cd(['leftLobe\' folderToRunKmeansOn{j}])
-                [greenImages redImages kmeansOut unwrappedImages unwrappedReduced meanGreenImages meanRedImages] = volumeImagingKmeans(nkmeans,volsPerOdor,nchannels,nvolseries,replicates,fractionOfVarianceTokeep);
-                cd([startDir '\' currFolders(i).name])
-            end
+                for j=1:length(folderToRunKmeansOn)
+                    cd(['leftLobe\' folderToRunKmeansOn{j}])
+                    [greenImages redImages kmeansOut unwrappedImages unwrappedReduced meanGreenImages meanRedImages] = volumeImagingKmeans(nkmeans,volsPerOdor,nchannels,nvolseries,replicates,fractionOfVarianceTokeep);
+                    cd([startDir '\' currFolders(i).name])
+                end
             catch
             end
         end
         if exist('rightLobe')
             try
-            for j=1:length(folderToRunKmeansOn)
-                cd(['rightLobe\'  folderToRunKmeansOn{j}])
-                [greenImages redImages kmeansOut unwrappedImages unwrappedReduced meanGreenImages meanRedImages] = volumeImagingKmeans(nkmeans,volsPerOdor,nchannels,nvolseries,replicates,fractionOfVarianceTokeep);
-                cd([startDir '\' currFolders(i).name])
-            end
+                for j=1:length(folderToRunKmeansOn)
+                    cd(['rightLobe\'  folderToRunKmeansOn{j}])
+                    [greenImages redImages kmeansOut unwrappedImages unwrappedReduced meanGreenImages meanRedImages] = volumeImagingKmeans(nkmeans,volsPerOdor,nchannels,nvolseries,replicates,fractionOfVarianceTokeep);
+                    cd([startDir '\' currFolders(i).name])
+                end
             catch
             end
         end
@@ -82,23 +82,23 @@ for days=1:length(daysToProcess)
         
         if exist('leftLobe')
             try
-            for j=1:length(folderToRunKmeansOn)
-                cd(['leftLobe\' folderToRunKmeansOn{j}])
-                [clusterVolU clusterInfoU]=makeClusters(rawKmeansOutput);
-                [grnResponse t] = processVolumeImagingKmeans(clusterVolFile,rawKmeansOutput,volumeAcquisitionTime,nChannels);
-                cd([startDir '\' currFolders(i).name])
-            end
+                for j=1:length(folderToRunKmeansOn)
+                    cd(['leftLobe\' folderToRunKmeansOn{j}])
+                    [clusterVolU clusterInfoU]=makeClusters(rawKmeansOutput);
+                    [grnResponse t] = processVolumeImagingKmeans(clusterVolFile,rawKmeansOutput,volumeAcquisitionTime,nChannels);
+                    cd([startDir '\' currFolders(i).name])
+                end
             catch
             end
         end
         if exist('rightLobe')
             try
-            for j=1:length(folderToRunKmeansOn)
-                cd(['rightLobe\'  folderToRunKmeansOn{j}])
-                [clusterVolU clusterInfoU]=makeClusters(rawKmeansOutput);
-                [grnResponse t] = processVolumeImagingKmeans(clusterVolFile,rawKmeansOutput,volumeAcquisitionTime,nChannels);
-                cd([startDir '\' currFolders(i).name])
-            end
+                for j=1:length(folderToRunKmeansOn)
+                    cd(['rightLobe\'  folderToRunKmeansOn{j}])
+                    [clusterVolU clusterInfoU]=makeClusters(rawKmeansOutput);
+                    [grnResponse t] = processVolumeImagingKmeans(clusterVolFile,rawKmeansOutput,volumeAcquisitionTime,nChannels);
+                    cd([startDir '\' currFolders(i).name])
+                end
             catch
             end
         end
