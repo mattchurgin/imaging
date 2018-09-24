@@ -4,9 +4,9 @@ function [clusterVolConsensus clusterInfoConsensus] = calculateConsensusClusters
 % Matt Churgin, September 2018
 
 overlapThresh=0.6;
-fracIn=0.75; %.5 defuault % fraction of iterations a cluster has to be in to be kept
+fracIn=0.6; %.5 defuault % fraction of iterations a cluster has to be in to be kept
 pixelThresh=0;
-pixelConsensus=0.5; % fraction of iterations a pixel needs to be part of the cluster to be counted as consensus
+pixelConsensus=0.6; % fraction of iterations a pixel needs to be part of the cluster to be counted as consensus
 
 % extract centroid for each cluster in each iteration
 clusterCentroids=cell(1,length(clusterInfoU));
@@ -22,8 +22,8 @@ disp('loaded centroids')
 % find euclidean distance between centroids
 for ii=1:length(clusterCentroids)
     for jj=1:length(clusterCentroids)
-        for i=1:length(clusterCentroids{ii})
-            for j=1:length(clusterCentroids{jj})
+        for i=1:size(clusterCentroids{ii},2)
+            for j=1:size(clusterCentroids{jj},2)
                 % euclidean distance matrix
                 %distM{ii}{jj}(i,j)=sqrt(sum((clusterCentroids{ii}(:,i)-clusterCentroids{jj}(:,j)).^2));
                 distM{ii}{jj}(i,j)=sqrt(sum((clusterCentroids{ii}(:,i)-clusterCentroids{jj}(:,j)).^2))/mean([clusterLinearSize{ii}(i) clusterLinearSize{jj}(j)]);
