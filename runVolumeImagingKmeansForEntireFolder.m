@@ -54,7 +54,7 @@ end
 disp(['done calculating kmeans.'])
 
 %% run makeClusters.m and processVolumeImagingKmeans.m for all folders
-
+clear all
 folderToRunKmeansOn{1}='Volumes2';
 %folderToRunKmeansOn{2}='Volumes2';
 daysToProcess{1}='180831_pairedbehaviorandimaging';
