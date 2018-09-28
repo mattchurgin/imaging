@@ -1,6 +1,6 @@
 % assign glomeruli v3
 % Matt Churgin, August 2018
-%% load data and compute spatial and odor response distance and rank correlation matrices
+% load data and compute spatial and odor response distance and rank correlation matrices
 
 clear all
 close all
@@ -16,6 +16,7 @@ myPercentage=1; % for normalizing centroid locations
 minOdors=4; % omit odor rank correlations when less than min odors are available in DOOR dataset
 
 clusterfilename=uigetfile(); % load file with clusters and responses
+savesuffix=clusterfilename(18:(end-4));
 
 load(clusterfilename)
 showClusters(clusterVolU,clusterInfoU)
@@ -223,7 +224,8 @@ ypeaks=zeros(size(myOR,2),size(pubOR,2));
 tic
 for i=1:size(myOR,2)
     for j=1:size(pubOR,2)
-        tempcorrnorm=normxcorr2(clusterProj{i},glomProj{j});
+        %tempcorrnorm=normxcorr2(clusterProj{i},glomProj{j});
+        tempcorrnorm=[1 2 1];
         shapePriorNorm(i,j)=max(tempcorrnorm(:));
         
         % save location of maximum cross correlation
@@ -240,10 +242,13 @@ for i=1:size(myOR,2)
 end
 disp(['time elapsed to compute cross-correlations: ' num2str(toc) ' seconds'])
 
-save('intermediateAssignment.mat', 'myOR', 'pubOR', 'shapePriorNorm', 'physDist', 'fullOdorRankCorr', 'odorRankCorr', 'rawClustersToDelete','slicesToRemove', 'pubNames', 'pubGlomNames','clusterfilename','clustersManuallyOmitted','omitAtlasZslices','minResponse')
+save(['intermediateAssignment_' savesuffix '.mat'], 'myOR', 'pubOR', 'shapePriorNorm', 'physDist', 'fullOdorRankCorr', 'odorRankCorr', 'rawClustersToDelete','slicesToRemove', 'pubNames', 'pubGlomNames','clusterfilename','clustersManuallyOmitted','omitAtlasZslices','minResponse','savesuffix')
+
 %% combine priors and assign glomeruli
 clear all
-load intermediateAssignment
+
+intermediatefilename=uigetfile(); % load file with clusters and responses
+load(intermediatefilename)
 load(clusterfilename)
 
 showIntermediateFigs=0;
@@ -376,17 +381,12 @@ end
 % run classification
 close all
 
-nshuffles=100000;
-% what if you use cluster ranks as distance input?  also, do the thing you
-% said in your email, i.e., create three composite dists and try to
-% optimize each, then choose the one with the lowest total score based on
-% rank.......
-
+nshuffles=10000;
 [output] = assignGloms(nshuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr);
 
-%% calculate final score for classifying and save
-distWeight=0.5;
-odorWeight=0.0;
+% calculate final score for classifying and save
+distWeight=0.2;
+odorWeight=0.1;
 shapeWeight=0;
 % calculate score for final classification
 for i=1:length(output.totalDistScore)
@@ -431,4 +431,4 @@ end
 
 showClusters(clusterVolAssigned,clusterInfoAssigned,clusterLabels);
 
-save(['assignedClustersBetterRandomization_d' num2str(distWeight) '_s' num2str(shapeWeight) '_o' num2str(odorWeight) '_minResponse' num2str(minResponse) '.mat'],'output','clusterVolAssigned','clusterInfoAssigned','clusterLabels','besti','odorWeight','distWeight','shapeWeight','finalScoreForClassifying')
+save(['assignedClustersBetterRandomization_d' num2str(distWeight) '_s' num2str(shapeWeight) '_o' num2str(odorWeight) '_minResponse' num2str(minResponse) '_' savesuffix '.mat'],'output','clusterVolAssigned','clusterInfoAssigned','clusterLabels','besti','odorWeight','distWeight','shapeWeight','finalScoreForClassifying')

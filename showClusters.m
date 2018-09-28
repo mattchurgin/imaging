@@ -13,13 +13,15 @@ camlight
 lighting gouraud
 
 hold on
+mycmap=distinguishable_colors(length(clusterVolU));
 
 for i=1:length(clusterVolU)
-    p2=patch(isosurface(clusterVolU{i}),'FaceColor',rand(1,3),'EdgeColor','none','FaceAlpha',0.3);
+    p2=patch(isosurface(clusterVolU{i}),'FaceColor',mycmap(i,:),'EdgeColor','none','FaceAlpha',0.3);
     isonormals(clusterVolU{i},p2)
     if length(labels)<1
-        text(clusterInfoU{i}.Centroid(1),clusterInfoU{i}.Centroid(2),clusterInfoU{i}.Centroid(3),num2str(i),'FontSize',15,'FontWeight','Bold')
+        text(clusterInfoU{i}.Centroid(1),clusterInfoU{i}.Centroid(2),clusterInfoU{i}.Centroid(3),num2str(i),'FontSize',20,'FontWeight','Bold')
+        %text(clusterInfoU{i}.Centroid(1),clusterInfoU{i}.Centroid(2),clusterInfoU{i}.Centroid(3),num2str(i),'Color',[1 1 1],'FontSize',15,'FontWeight','Bold')
     else
-        text(clusterInfoU{i}.Centroid(1),clusterInfoU{i}.Centroid(2),clusterInfoU{i}.Centroid(3),labels{i},'FontSize',15,'FontWeight','Bold')
+        text(clusterInfoU{i}.Centroid(1),clusterInfoU{i}.Centroid(2),clusterInfoU{i}.Centroid(3),labels{i},'FontSize',20,'FontWeight','Bold')
     end
 end

@@ -16,6 +16,7 @@ myPercentage=1; % for normalizing centroid locations
 minOdors=4; % omit odor rank correlations when less than min odors are available in DOOR dataset
 
 clusterfilename=uigetfile(); % load file with clusters and responses
+savesuffix=clusterfilename((end-10):(end-4));
 
 load(clusterfilename)
 showClusters(clusterVolU,clusterInfoU)
@@ -240,9 +241,11 @@ for i=1:size(myOR,2)
 end
 disp(['time elapsed to compute cross-correlations: ' num2str(toc) ' seconds'])
 
-save('intermediateAssignment.mat', 'myOR', 'pubOR', 'shapePriorNorm', 'physDist', 'fullOdorRankCorr', 'odorRankCorr', 'rawClustersToDelete','slicesToRemove', 'pubNames', 'pubGlomNames','clusterfilename','clustersManuallyOmitted','omitAtlasZslices','minResponse')
+save(['intermediateAssignment_' savesuffix '.mat'], 'myOR', 'pubOR', 'shapePriorNorm', 'physDist', 'fullOdorRankCorr', 'odorRankCorr', 'rawClustersToDelete','slicesToRemove', 'pubNames', 'pubGlomNames','clusterfilename','clustersManuallyOmitted','omitAtlasZslices','minResponse','savesuffix')
 %% combine priors and assign glomeruli
 clear all
+
+
 load intermediateAssignment
 load(clusterfilename)
 
@@ -377,16 +380,11 @@ end
 close all
 
 nshuffles=100000;
-% what if you use cluster ranks as distance input?  also, do the thing you
-% said in your email, i.e., create three composite dists and try to
-% optimize each, then choose the one with the lowest total score based on
-% rank.......
-
-[output] = assignGlomsBetterRandomization(nshuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr);
+[output] = assignGloms(nshuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr);
 
 %% calculate final score for classifying and save
 distWeight=0.5;
-odorWeight=0.0;
+odorWeight=0.25;
 shapeWeight=0;
 % calculate score for final classification
 for i=1:length(output.totalDistScore)

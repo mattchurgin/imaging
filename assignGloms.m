@@ -10,9 +10,9 @@ function [output] = assignGloms(nShuffles,odorCorrNormed,physDistNormed,shapePri
 %
 
 
-physDistWeight=0.63;
+physDistWeight=0.8;
 shapeWeight=0.0;
-
+odorWeight=0.0;
 
 glomerulusAssignmentTries=cell(1,nShuffles);
 clusterAssignmentTries=cell(1,nShuffles);
@@ -30,18 +30,20 @@ glomsToTry=5;  % for each cluster, which top X gloms to consider
 clustersToTry=5; % for each glomerulus, which top X clusters to consider
 
 % create lookup table for how often to select the top glomsToTry and top
-% clustersToTry matches.  Use a linear probability
+% clustersToTry matches.  Use a n^powerProb probability distribution. 
 glomSelector=[];
 clusterSelector=[];
+powerProb=1; % 1 = linear.  2 = quadratic
 for i=1:glomsToTry
-   glomSelector=[glomSelector i*ones(1,glomsToTry+1-i)]; 
+   glomSelector=[glomSelector i*ones(1,(glomsToTry+1-i)^powerProb)]; 
 end
 for i=1:clustersToTry
-   clusterSelector=[clusterSelector i*ones(1,clustersToTry+1-i)]; 
+   clusterSelector=[clusterSelector i*ones(1,(clustersToTry+1-i)^powerProb)]; 
 end
 probToPermute=1; % fraction of time to permute [0,1]
 
-compositeDist =  physDistWeight*(physDistNormed)+shapeWeight*shapePriorNormed;
+%compositeDist =  physDistWeight*(physDistNormed)+shapeWeight*shapePriorNormed;
+compositeDist =  physDistWeight*(physDistNormed)+odorWeight*odorCorrNormed;
 
 assignmentThreshold=prctile(compositeDist(:),20);
 assignmentThreshold=Inf;
