@@ -98,22 +98,7 @@ end
 % calculate time vector
 t=[1:size(greenImages{1},4)]*volumeAcquisitionTime;
 
-figure
-for i=1:size(grnResponse,1)
-    subplot(1,size(grnResponse,1),i)
-    
-    imagesc(t,1:size(grnResponse,2),squeeze(grnResponse(i,:,:)),[0 1])
-    title(['odor ' num2str(i)])
-    if i==1
-        xlabel('Time (s)')
-        ylabel('Cluster #')
-        title(['Air'])
-    else
-        title(['Odor #' num2str(i-1)])
-        set(gca,'YTick','')
-    end
-    set(gca,'FontSize',15)
-end
+plotALResponse(grnResponse,t)
 
 str = pwd ;
 idx = strfind(str,'/');
