@@ -5,8 +5,6 @@ function [clusterVolU clusterInfoU]=makeClusters(rawKmeansOutput)
 
 load(rawKmeansOutput)
 
-topkmeans=5;
-
 warning('off')
 
 if numReplicates>1
@@ -14,12 +12,7 @@ if numReplicates>1
     [clusterVolU clusterInfoU clusterArea nClustersFound] = processMultipleKmeans(rawKmeansOutput);
     disp('processed clusters for multiple replicates')
     
-    % find best kmeans replicates and only use those for conenssus
-    % calculation
-    Csums = cellfun(@mean, sumd);
-    [v i]=sort(Csums,'ascend');
-    
-    [clusterVolConsensus clusterInfoConsensus] = calculateConsensusClustersOverlap(clusterVolU(i(1:topkmeans)),clusterInfoU(i(1:topkmeans)));
+    [clusterVolConsensus clusterInfoConsensus] = calculateConsensusClustersOverlap(clusterVolU,clusterInfoU);
     disp('found consensus clusters')
     
     clear clusterVolU clusterInfoU

@@ -6,13 +6,21 @@ load(rawKmeansFile);
 
 if length(numKmeans==1) % one kmeans run with multiple replicates
     disp('one kmeans run with multiple replicates')
-    nClustersFound=zeros(1,length(kmeansOut));
-    clusterVolU=cell(1,length(kmeansOut));
-    clusterInfoU=cell(1,length(kmeansOut));
-    clusterArea=cell(1,length(kmeansOut));
     
-    for jj=1:length(kmeansOut)
-        [clusterVol clusterInfo uniqueCV uniqueCI uniqueCI2d] = visualizeClusters(kmeansOut{jj},400,20000,50);
+    % find best kmeans replicates and only use those
+    topkmeans=5;
+
+    Csums = cellfun(@mean, sumd);
+    [vals topinds]=sort(Csums,'ascend');
+    topinds=topinds(1:topkmeans);
+    
+    nClustersFound=zeros(1,length(topinds));
+    clusterVolU=cell(1,length(topinds));
+    clusterInfoU=cell(1,length(topinds));
+    clusterArea=cell(1,length(topinds));
+    
+    for jj=1:length(topinds)
+        [clusterVol clusterInfo uniqueCV uniqueCI uniqueCI2d] = visualizeClusters(kmeansOut{topinds(jj)},400,20000,50);
         clusterVolU{jj}=uniqueCV;
         clusterInfoU{jj}=uniqueCI;
         %clusterInfo2dU{jj}=uniqueCI2d;
@@ -21,7 +29,7 @@ if length(numKmeans==1) % one kmeans run with multiple replicates
             clusterArea{jj}(z)=uniqueCI{z}.Area;
         end
         nClustersFound(jj)=length(uniqueCV);
-        disp(['found clusters for replicate # ' num2str(jj) ' of ' num2str(length(kmeansOut))])
+        disp(['found clusters for replicate # ' num2str(jj) ' of ' num2str(length(topinds))])
     end
 else % multiple kmeans runs with multiple replicates
     disp('multiple kmeans runs with multiple replicates')
