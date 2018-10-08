@@ -20,7 +20,6 @@ for i=1:length(clusterVolU)
     isonormals(clusterVolU{i},p2)
     if length(labels)<1
         text(clusterInfoU{i}.Centroid(1),clusterInfoU{i}.Centroid(2),clusterInfoU{i}.Centroid(3),num2str(i),'FontSize',20,'FontWeight','Bold')
-        %text(clusterInfoU{i}.Centroid(1),clusterInfoU{i}.Centroid(2),clusterInfoU{i}.Centroid(3),num2str(i),'Color',[1 1 1],'FontSize',15,'FontWeight','Bold')
     else
         text(clusterInfoU{i}.Centroid(1),clusterInfoU{i}.Centroid(2),clusterInfoU{i}.Centroid(3),labels{i},'FontSize',20,'FontWeight','Bold')
     end

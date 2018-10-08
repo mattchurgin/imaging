@@ -1,4 +1,4 @@
-function [output] = assignGloms(nShuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr,clusterCentroids,glomCentroids)
+function [output] = assignGloms(nShuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr,pubPairwiseDistRank,clusterCentroids)
 % assigns clusters a glomerular identity using a combination of prior
 % information on odor response, centroid location, and shape
 % assignGloms by default uses a greedy algorithm that makes the best
@@ -9,9 +9,11 @@ function [output] = assignGloms(nShuffles,odorCorrNormed,physDistNormed,shapePri
 % nShuffles is number of trials to do (default is one)
 %
 
+cX=clusterCentroi
+
 physDistWeight=0.8;
 shapeWeight=0.0;
-odorWeight=0.2;
+odorWeight=0.0;
 
 glomerulusAssignmentTries=cell(1,nShuffles);
 clusterAssignmentTries=cell(1,nShuffles);
@@ -24,7 +26,6 @@ totalDistScore=zeros(1,nShuffles);
 totalDistScoreShuffled=zeros(1,nShuffles);
 totalShapeScore=zeros(1,nShuffles);
 totalShapeScoreShuffled=zeros(1,nShuffles);
-totalPairwiseDistScore=zeros(1,nShuffles);
 
 glomsToTry=5;  % for each cluster, which top X gloms to consider
 clustersToTry=5; % for each glomerulus, which top X clusters to consider
@@ -180,19 +181,21 @@ for nTries=1:nShuffles
     
     totalscore=nansum(assignmentScore);
     
-    % calculate published glomeruli pairwise distances based on labelled
-    % glomeruli
-    pubPairwiseDist=NaN*zeros(size(glomCentroids,1),size(glomCentroids,1));
+    % find cluster pairwise distances
+    
+    % find pair-wise distances between all published glomeruli locations
+    clusterPairwiseDist=NaN*zeros(length(glomerulusAssignment),length(glomerulusAssignment));
     for i=1:length(glomerulusAssignment)
         for j=1:length(glomerulusAssignment)
             if i~=j
-                pubPairwiseDist(glomerulusAssignment(i),glomerulusAssignment(j))=sqrt(sum((glomCentroids(glomerulusAssignment(i),:)-glomCentroids(glomerulusAssignment(j),:)).^2));
+                clusterPairwiseDist(i,j)=sqrt((cX(i)-pubX(j)).^2+(pubY(i)-pubY(j)).^2+(pubZ(i)-pubZ(j)).^2);
             end
         end
     end
+    
     % convert pairwise distances into rank distances
-    pubPairwiseDistRank=NaN*zeros(size(glomCentroids,1),size(glomCentroids,1));
-    for i=1:length(glomerulusAssignment)
+    pubPairwiseDistRank=NaN*zeros(length(pubX),length(pubX));
+    for i=1:length(pubX)
         [vals inds]=sort(pubPairwiseDist(i,:));
         % remove nans
         todelete=find(isnan(vals));
@@ -205,38 +208,12 @@ for nTries=1:nShuffles
         end
     end
     
-    % find pair-wise distances between all clustered glomeruli locations
-    clusterPairwiseDist=NaN*zeros(size(glomCentroids,1),size(glomCentroids,1));
-    for i=1:length(glomerulusAssignment)
-        for j=1:length(glomerulusAssignment)
-            if i~=j
-                clusterPairwiseDist(glomerulusAssignment(i),glomerulusAssignment(j))=sqrt(sum((clusterCentroids(clusterAssignment(i),:)-clusterCentroids(clusterAssignment(j),:)).^2));
-            end
-        end
-    end
-    
-    % convert pairwise distances into rank distances
-    clusterPairwiseDistRank=NaN*zeros(size(glomCentroids,1),size(glomCentroids,1));
-    for i=1:length(glomerulusAssignment)
-        [vals inds]=sort(clusterPairwiseDist(i,:));
-        % remove nans
-        todelete=find(isnan(vals));
-        vals(todelete)=[];
-        inds(todelete)=[];
-        
-        % save rank order
-        for j=1:length(inds)
-            clusterPairwiseDistRank(i,inds(j))=j;
-        end
-    end
-    
     odorScore=zeros(1,length(clusterAssignment));
     odorScoreShuffled=zeros(1,length(clusterAssignment));
     distScore=zeros(1,length(clusterAssignment));
     distScoreShuffled=zeros(1,length(clusterAssignment));
     shapeScore=zeros(1,length(clusterAssignment));
     shapeScoreShuffled=zeros(1,length(clusterAssignment));
-    pairWiseDistScore=zeros(1,length(clusterAssignment));
     
     permutationsForShuffledArray=1;
     % validate using odor rank correlation
@@ -244,13 +221,6 @@ for nTries=1:nShuffles
         odorScore(j)=(odorRankCorr(clusterAssignment(j),glomerulusAssignment(j)));
         distScore(j)=(physDistNormed(clusterAssignment(j),glomerulusAssignment(j)));
         shapeScore(j)=(shapePriorNormed(clusterAssignment(j),glomerulusAssignment(j)));
-        
-        tempinds=find(isfinite(clusterPairwiseDistRank(glomerulusAssignment(j),:)));
-        tempinds2=find(isfinite(pubPairwiseDistRank(glomerulusAssignment(j),:)));
-        tempintersect=intersect(tempinds,tempinds2);
-        %tempcorr=corrcoef(clusterPairwiseDistRank(glomerulusAssignment(j),tempintersect),pubPairwiseDistRank(glomerulusAssignment(j),tempintersect));
-        tempcorr=corrcoef(clusterPairwiseDist(glomerulusAssignment(j),tempintersect),pubPairwiseDist(glomerulusAssignment(j),tempintersect));
-        pairWiseDistScore(j)=tempcorr(1,2);
         
         odorScoreShuffledTemp=zeros(1,permutationsForShuffledArray);
         distPriorScoreShuffledTemp=zeros(1,permutationsForShuffledArray);
@@ -284,9 +254,6 @@ for nTries=1:nShuffles
     shapeScoreTries{nTries}=shapeScore;
     totalShapeScore(nTries)=nanmedian(shapeScore);
     
-    pairwiseDistScoreTries{nTries}=pairWiseDistScore;
-    totalPairwiseDistScore(nTries)=nanmedian(pairWiseDistScore);
-    
     % save shuffled scores
     odorScoreShuffledTries{nTries}=odorScoreShuffled;
     totalOdorScoreShuffled(nTries)=nanmedian(odorScoreShuffled);
@@ -316,8 +283,6 @@ output.shapeScoreHistory=shapeScoreTries;
 output.totalOdorScore=totalOdorScore;
 output.totalDistScore=totalDistScore;
 output.totalShapeScore=totalShapeScore;
-output.pairwiseDistScoreHistory=pairwiseDistScoreTries;
-output.totalPairwiseDistScore=totalPairwiseDistScore;
 
 output.odorScoreShuffledHistory=odorScoreShuffledTries;
 output.distScoreShuffledHistory=distScoreShuffledTries;
