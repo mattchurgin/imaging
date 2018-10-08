@@ -11,7 +11,7 @@ if numReplicates>1
     disp('processing multiple replicates')
     [clusterVolU clusterInfoU clusterArea nClustersFound] = processMultipleKmeans(rawKmeansOutput);
     disp('processed clusters for multiple replicates')
-    
+     
     [clusterVolConsensus clusterInfoConsensus] = calculateConsensusClustersOverlap(clusterVolU,clusterInfoU);
     disp('found consensus clusters')
     

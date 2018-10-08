@@ -21,6 +21,7 @@ for days=1:length(daysToProcess)
     startDir=pwd;
     currFolders = dir(startDir);
     currFolders=currFolders(3:end);
+    clear actuallyAFolder
     for i=1:length(currFolders)
         actuallyAFolder(i)=currFolders(i).isdir;
     end
@@ -58,17 +59,17 @@ disp(['done calculating kmeans.'])
 folderToRunKmeansOn{1}='Volumes';
 folderToRunKmeansOn{2}='Volumes2';
 
-daysToProcess{1}='180831_pairedbehaviorandimaging';
-daysToProcess{2}='180906';
-daysToProcess{3}='180911_pairedbehaviorimaging';
-daysToProcess{4}='180914_pairedbehaviorimaging';
-daysToProcess{5}='180918_pairedbehaviorimaging';
-daysToProcess{6}='180925_pairedbehaviorimaging';
-daysToProcess{7}='181002_pairedbehaviorimaging_gh146';
-daysToProcess{8}='181003_pairedbehaviorimaging_gh146';
-daysToProcess{9}='180926_orcogal4xuasgcamp';
-daysToProcess{10}='181004_orcogal4';
-daysToProcess{10}='180925_orcogal4xuasgcamp';
+% daysToProcess{1}='180831_pairedbehaviorandimaging';
+% daysToProcess{2}='180906';
+% daysToProcess{3}='180911_pairedbehaviorimaging';
+% daysToProcess{4}='180914_pairedbehaviorimaging';
+% daysToProcess{1}='180918_pairedbehaviorimaging';
+% daysToProcess{2}='180925_pairedbehaviorimaging';
+% daysToProcess{3}='181002_pairedbehaviorimaging_gh146';
+% daysToProcess{4}='181003_pairedbehaviorimaging_gh146';
+daysToProcess{1}='180926_orcogal4xuasgcamp';
+daysToProcess{2}='181004_orcogal4';
+daysToProcess{3}='180925_orcogal4xuasgcamp';
 
 rawKmeansOutput='rawKmeans_80clusters_0.75fractionOfVarianceKept_50replicates.mat';
 clusterVolFile='clusterVols.mat';
@@ -85,6 +86,7 @@ for days=1:length(daysToProcess)
     display(['processing folder ' startDir])
     currFolders = dir(startDir);
     currFolders=currFolders(3:end);
+    clear actuallyAFolder
     for i=1:length(currFolders)
         actuallyAFolder(i)=currFolders(i).isdir;
     end
@@ -143,6 +145,7 @@ for days=1:length(daysToProcess)
     display(['processing folder ' startDir])
     currFolders = dir(startDir);
     currFolders=currFolders(3:end);
+    clear actuallyAFolder
     for i=1:length(currFolders)
         actuallyAFolder(i)=currFolders(i).isdir;
     end

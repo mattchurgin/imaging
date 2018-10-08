@@ -4,7 +4,7 @@ function [clusterVolConsensus clusterInfoConsensus] = calculateConsensusClusters
 % Matt Churgin, September 2018
 
 overlapThresh=0.6;
-fracIn=0.6; %.5 defuault % fraction of iterations a cluster has to be in to be kept
+fracIn=0.6; %.5 default % fraction of iterations a cluster has to be in to be kept
 pixelThresh=0;
 pixelConsensus=0.6; % fraction of iterations a pixel needs to be part of the cluster to be counted as consensus
 
@@ -123,9 +123,9 @@ for j=1:length(clusterInfoConsensus)
     clusterConsensusLinearSize=[clusterConsensusLinearSize nthroot(clusterInfoConsensus{j}.Area,3)];
 end
 
-prcOverlap=zeros(length(clusterConsensusCentroids),length(clusterConsensusCentroids));
-for ii=1:length(clusterConsensusCentroids)
-    for jj=1:length(clusterConsensusCentroids)
+prcOverlap=zeros(size(clusterConsensusCentroids,2),size(clusterConsensusCentroids,2));
+for ii=1:size(clusterConsensusCentroids,2)
+    for jj=1:size(clusterConsensusCentroids,2)
         distMConsensus(ii,jj)=sqrt(sum((clusterConsensusCentroids(:,ii)-clusterConsensusCentroids(:,jj)).^2))/mean([clusterConsensusLinearSize(ii) clusterConsensusLinearSize(jj)]);
     
         prcOverlap(ii,jj)=sum(clusterVolConsensus{ii}(:).*clusterVolConsensus{jj}(:))/mean([clusterInfoConsensus{ii}.Area clusterInfoConsensus{jj}.Area]);
@@ -134,61 +134,66 @@ end
 
 tomerge=prcOverlap>0.75;
 indstomerge=find(sum(tomerge,1)>1);
-covered=setxor(indstomerge,1:length(clusterConsensusCentroids));
-clear merges
-mergesToMake=0;
-for i=1:length(covered)
-    mergesToMake=mergesToMake+1;
-    merges{mergesToMake}=covered(i);
-end
 
-for i=1:length(indstomerge)
-    if ~any(ismember(covered,indstomerge(i)))
-        temp=find(tomerge(:,indstomerge(i)));
-        covered=[covered temp'];
-        
+if length(indstomerge>0)
+    
+    covered=setxor(indstomerge,1:length(clusterConsensusCentroids));
+    clear merges
+    mergesToMake=0;
+    for i=1:length(covered)
         mergesToMake=mergesToMake+1;
-        merges{mergesToMake}=temp;
+        merges{mergesToMake}=covered(i);
     end
+    
+    for i=1:length(indstomerge)
+        if ~any(ismember(covered,indstomerge(i)))
+            temp=find(tomerge(:,indstomerge(i)));
+            covered=[covered temp'];
+            
+            mergesToMake=mergesToMake+1;
+            merges{mergesToMake}=temp;
+        end
+    end
+    
+    % finally merge the clusters
+    for i=1:length(merges)
+        if length(merges{i})==1
+            clusterVolConsensusMerged{i}=clusterVolConsensus{merges{i}};
+            clusterInfoConsensusMerged{i}=clusterInfoConsensus{merges{i}};
+        else
+            temp=zeros(size(clusterVolU{1}{1},1),size(clusterVolU{1}{1},2),size(clusterVolU{1}{1},3));
+            currthresh=0;
+            for j=1:length(merges{i})
+                temp=temp+clusterVolConsensus{merges{i}(j)};
+                currthresh=currthresh+1;
+            end
+            
+            temp(temp<(pixelConsensus*currthresh))=0;
+            temp=logical(temp);
+            
+            CC = bwconncomp(temp); % find connected voxels within the cluster
+            numPixels = cellfun(@numel,CC.PixelIdxList);
+            
+            csize=cellfun(@length, CC.PixelIdxList);
+            [m mindex]=max(csize);
+            aaa=1:length(CC.PixelIdxList);
+            
+            %%remove all but maximum-sized cluster
+            for j=setxor(aaa,mindex)
+                temp(CC.PixelIdxList{j}) = 0;
+            end
+            
+            clusterVolConsensusMerged{i}=temp;
+            CD = bwconncomp(temp);
+            clusterInfoConsensusMerged{i}=regionprops(CD,'all');
+        end
+    end
+    
+    clear clusterVolConsensus clusterInfoConsensus
+    clusterVolConsensus=clusterVolConsensusMerged;
+    clusterInfoConsensus=clusterInfoConsensusMerged;
 end
 
-% finally merge the clusters
-for i=1:length(merges)
-    if length(merges{i})==1
-        clusterVolConsensusMerged{i}=clusterVolConsensus{merges{i}};
-        clusterInfoConsensusMerged{i}=clusterInfoConsensus{merges{i}};
-    else
-        temp=zeros(size(clusterVolU{1}{1},1),size(clusterVolU{1}{1},2),size(clusterVolU{1}{1},3));
-        currthresh=0;
-        for j=1:length(merges{i})
-            temp=temp+clusterVolConsensus{merges{i}(j)};
-            currthresh=currthresh+1;
-        end
-        
-        temp(temp<(pixelConsensus*currthresh))=0;
-        temp=logical(temp);
-        
-        CC = bwconncomp(temp); % find connected voxels within the cluster
-        numPixels = cellfun(@numel,CC.PixelIdxList);
-        
-        csize=cellfun(@length, CC.PixelIdxList);
-        [m mindex]=max(csize);
-        aaa=1:length(CC.PixelIdxList);
-        
-        %%remove all but maximum-sized cluster
-        for j=setxor(aaa,mindex)
-            temp(CC.PixelIdxList{j}) = 0;
-        end
-        
-        clusterVolConsensusMerged{i}=temp;
-        CD = bwconncomp(temp);
-        clusterInfoConsensusMerged{i}=regionprops(CD,'all');
-    end
-end
-
-clear clusterVolConsensus clusterInfoConsensus
-clusterVolConsensus=clusterVolConsensusMerged;
-clusterInfoConsensus=clusterInfoConsensusMerged;
 
 todelete=[];
 for i=1:length(clusterInfoConsensus)
