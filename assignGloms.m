@@ -11,7 +11,7 @@ function [output] = assignGloms(nShuffles,odorCorrNormed,physDistNormed,shapePri
 
 physDistWeight=0.8;
 shapeWeight=0.0;
-odorWeight=0.2;
+odorWeight=0.1;
 
 glomerulusAssignmentTries=cell(1,nShuffles);
 clusterAssignmentTries=cell(1,nShuffles);

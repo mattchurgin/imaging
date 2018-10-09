@@ -295,8 +295,60 @@ save(['intermediateAssignment_' savesuffix '.mat'], 'myOR', 'pubOR', 'shapePrior
 
 %% run assign glomeruli
 clear all
-nShuffles=50000;
+nShuffles=10000;
 intermediatefilename='intermediateAssignment_Volumes.mat';
 [output besti]=runAssignGloms(intermediatefilename,nShuffles);
 
 %% run assign glomeruli for all folders 
+
+nShuffles=100000;
+odorpanelVolume{1}='Volumes';
+odorpanelVolume{2}='Volumes2';
+
+daysToProcess{1}='180831_pairedbehaviorandimaging';
+daysToProcess{2}='180906';
+daysToProcess{3}='180911_pairedbehaviorimaging';
+daysToProcess{4}='180914_pairedbehaviorimaging';
+daysToProcess{5}='180918_pairedbehaviorimaging';
+daysToProcess{6}='180925_pairedbehaviorimaging';
+daysToProcess{7}='181002_pairedbehaviorimaging_gh146';
+daysToProcess{8}='181003_pairedbehaviorimaging_gh146';
+
+fileToLoad='intermediateAssignment_';
+
+lobes{1}='leftLobe';
+lobes{2}='rightLobe';
+
+homeDir=pwd;
+for days=1:length(daysToProcess)
+    cd(daysToProcess{days})
+    startDir=pwd;
+    display(['processing folder ' startDir])
+    currFolders = dir(startDir);
+    currFolders=currFolders(3:end);
+    clear actuallyAFolder
+    for i=1:length(currFolders)
+        actuallyAFolder(i)=currFolders(i).isdir;
+    end
+    currFolders(~actuallyAFolder)=[];
+    
+    for i=1:length(currFolders)
+        cd(currFolders(i).name)
+        for currLobe=1:length(lobes)
+            if exist(lobes{currLobe})
+                cd(lobes{currLobe})
+                for j=1:length(odorpanelVolume)
+                    intermediatefilename=[fileToLoad odorpanelVolume{j} '.mat'];
+                    if exist(intermediatefilename)
+                        [output besti]=runAssignGloms(intermediatefilename,nShuffles);
+                        drawnow
+                        close all
+                    end
+                end
+                cd([startDir '\' currFolders(i).name])
+            end
+        end
+        cd(startDir)
+    end
+    cd(homeDir)
+end

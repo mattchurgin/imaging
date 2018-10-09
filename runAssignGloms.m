@@ -138,9 +138,9 @@ glomCentroids=[pubX' pubY' pubZ'];
 [output] = assignGloms(nshuffles,odorCorrNormed,physDistNormed,shapePriorNormed,slicesToRemove,odorRankCorr,clusterCentroids,glomCentroids);
 
 % calculate final score for classifying and save
-distWeight=0.1;
+distWeight=0.2;
 odorWeight=0.0;
-pairwiseWeight=0.3;
+pairwiseWeight=0.5;
 % calculate score for final classification
 finalScoreForClassifying=zeros(1,length(output.totalDistScore));
 for i=1:length(output.totalDistScore)
@@ -185,4 +185,14 @@ end
 
 showClusters(clusterVolAssigned,clusterInfoAssigned,clusterLabels);
 
-save(['assignedClusters_d' num2str(distWeight) '_p' num2str(pairwiseWeight) '_o' num2str(odorWeight) '_' savesuffix '.mat'],'output','clusterVolAssigned','clusterInfoAssigned','clusterLabels','besti','odorWeight','distWeight','pairwiseWeight','finalScoreForClassifying')
+% outputs to save
+totalOdorScore=output.totalOdorScore(besti);
+totalOptimizedScore=output.optimizedScore(besti);
+totalDistScore=output.totalDistScore(besti);
+totalPairwiseScore=output.totalPairwiseDistScore(besti);
+odorScore=output.odorScoreHistory{besti};
+distScore=output.distScoreHistory{besti};
+pairwiseScore=output.pairwiseDistScoreHistory{besti};
+clusterAssignments=output.clusterAssignmentHistory{besti};
+
+save(['assignedClusters_d' num2str(distWeight) '_p' num2str(pairwiseWeight) '_o' num2str(odorWeight) '_' savesuffix '.mat'],'totalOdorScore','totalOptimizedScore','totalDistScore','totalPairwiseScore','odorScore','distScore','pairwiseScore','clusterVolAssigned','clusterInfoAssigned','clusterLabels','besti','odorWeight','distWeight','pairwiseWeight','clusterAssignments')
