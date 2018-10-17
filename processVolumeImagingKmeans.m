@@ -95,6 +95,30 @@ for i=1:length(greenImages)
     display(['calculated cluster means for volumes ' num2str(i) ' of ' num2str(length(greenImages))])
 end
 
+% merge clusters with high response correlation and close physical distance
+[clusterVolNew clusterInfoNew] = mergeLikeClusters(clusterVolU,clusterInfoU,grnResponse);
+clusterVolU=clusterVolNew;
+clusterInfoU=clusterInfoNew;
+
+% remake grnResponse based on new clusterVols
+numClusters=length(clusterVolU);
+
+grnResponse=zeros(length(greenImages),numClusters,size(greenImages{1},4));
+%redResponse=zeros(length(greenImages),numClusters,size(greenImages{1},4));
+for i=1:length(greenImages)
+    currBaseLine=nanmean(greenImages{i},4);
+    for j = 1:numClusters
+        for k=1:size(greenImages{1},4)
+            % calculate df/f 
+            grnResponse(i,j,k)=100*nanmean(nanmean(nanmean((greenImages{i}(:,:,:,k)-currBaseLine)./currBaseLine.*(clusterVolU{j}))));
+            
+            % calculate df/f using meanGreenImage
+           %grnResponse(i,j,k)=100*mean(mean(mean((greenImages{i}(:,:,:,k)-meanGreenImages)./meanGreenImages.*(clusterVolU{j}))));
+        end
+    end
+    display(['calculated cluster means for volumes ' num2str(i) ' of ' num2str(length(greenImages))])
+end
+
 % calculate time vector
 t=[1:size(greenImages{1},4)]*volumeAcquisitionTime;
 

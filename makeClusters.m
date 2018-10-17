@@ -24,6 +24,6 @@ else
     [clusterVols clusterInfo clusterVolU clusterInfoU]=visualizeClusters(kmeansOut,400,20000,50);
 end
 
-showClusters(clusterVolU,clusterInfoU)
+%showClusters(clusterVolU,clusterInfoU)
 
 save('clusterVols.mat','clusterVolU','clusterInfoU')

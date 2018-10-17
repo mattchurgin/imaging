@@ -5,7 +5,7 @@ clear all
 folderToRunKmeansOn{1}='Volumes';
 folderToRunKmeansOn{2}='Volumes2';
 
-daysToProcess{1}='181004_orcogal4';
+daysToProcess{1}='181012_pairedbehaviorimaging_gh146';
 
 
 fractionOfVarianceTokeep=0.75;
@@ -58,18 +58,20 @@ disp(['done calculating kmeans.'])
 
 folderToRunKmeansOn{1}='Volumes';
 folderToRunKmeansOn{2}='Volumes2';
+% 
+% 
+daysToProcess{1}='180831_pairedbehaviorandimaging';
+daysToProcess{2}='180906';
+daysToProcess{3}='180911_pairedbehaviorimaging';
+daysToProcess{4}='180914_pairedbehaviorimaging';
+daysToProcess{5}='180918_pairedbehaviorimaging';
+daysToProcess{6}='180920_pairebehaviorimaging';
+daysToProcess{7}='180925_pairedbehaviorimaging';
+daysToProcess{8}='181002_pairedbehaviorimaging_gh146';
+daysToProcess{9}='181003_pairedbehaviorimaging_gh146';
+daysToProcess{10}='181010_pairedbehaviorimaging_gh146';
+daysToProcess{11}='181012_pairedbehaviorimaging_gh146';
 
-% daysToProcess{1}='180831_pairedbehaviorandimaging';
-% daysToProcess{2}='180906';
-% daysToProcess{3}='180911_pairedbehaviorimaging';
-% daysToProcess{4}='180914_pairedbehaviorimaging';
-% daysToProcess{1}='180918_pairedbehaviorimaging';
-% daysToProcess{2}='180925_pairedbehaviorimaging';
-% daysToProcess{3}='181002_pairedbehaviorimaging_gh146';
-% daysToProcess{4}='181003_pairedbehaviorimaging_gh146';
-daysToProcess{1}='180926_orcogal4xuasgcamp';
-daysToProcess{2}='181004_orcogal4';
-daysToProcess{3}='180925_orcogal4xuasgcamp';
 
 rawKmeansOutput='rawKmeans_80clusters_0.75fractionOfVarianceKept_50replicates.mat';
 clusterVolFile='clusterVols.mat';
@@ -122,18 +124,13 @@ end
 disp(['done creating clusters and responses.'])
 
 %% copy clusterVolumes .mat files to dropbox
-
+clear all
 folderToRunKmeansOn{1}='Volumes';
 folderToRunKmeansOn{2}='Volumes2';
 
-daysToProcess{1}='180831_pairedbehaviorandimaging';
-daysToProcess{2}='180906';
-daysToProcess{3}='180911_pairedbehaviorimaging';
-daysToProcess{4}='180914_pairedbehaviorimaging';
-daysToProcess{5}='180918_pairedbehaviorimaging';
-daysToProcess{6}='180925_pairedbehaviorimaging';
-daysToProcess{7}='181002_pairedbehaviorimaging_gh146';
-daysToProcess{8}='181003_pairedbehaviorimaging_gh146';
+
+daysToProcess{1}='181010_pairedbehaviorimaging_gh146';
+
 
 fileToCopy='clusterResponses_';
 destinationFolder='C:\Users\mac0456\Dropbox\flyimaging';
@@ -158,7 +155,7 @@ for days=1:length(daysToProcess)
             for j=1:length(folderToRunKmeansOn)
                 if exist(['leftLobe\' folderToRunKmeansOn{j}])
                     cd(['leftLobe\' folderToRunKmeansOn{j}])
-                        status=copyfile([homeDir '\' startDir '\' currFolders(i).name '\' 'leftLobe' fileToCopy '_' folderToRunKmeansOn{j} '.mat'],[destinationFolder '\' currFolders(i).name '\' 'leftLobe' fileToCopy '_' folderToRunKmeansOn{j} '.mat']);
+                        [status message]=copyfile([startDir '\' currFolders(i).name '\leftLobe\' folderToRunKmeansOn{j} '\' fileToCopy folderToRunKmeansOn{j} '.mat'],[destinationFolder '\' daysToProcess{days} '\' currFolders(i).name '\leftLobe\' fileToCopy folderToRunKmeansOn{j} '.mat']);
                     cd([startDir '\' currFolders(i).name])
                 end
             end
@@ -167,7 +164,7 @@ for days=1:length(daysToProcess)
             for j=1:length(folderToRunKmeansOn)
                 if exist(['rightLobe\'  folderToRunKmeansOn{j}])
                     cd(['rightLobe\'  folderToRunKmeansOn{j}])
-                        status=copyfile([homeDir '\' startDir '\' currFolders(i).name '\' 'rightLobe' fileToCopy '_' folderToRunKmeansOn{j} '.mat'],[destinationFolder '\' currFolders(i).name '\' 'rightLobe' fileToCopy '_' folderToRunKmeansOn{j} '.mat']);
+                        [status message]=copyfile([startDir '\' currFolders(i).name '\rightLobe\' folderToRunKmeansOn{j} '\' fileToCopy folderToRunKmeansOn{j} '.mat'],[destinationFolder '\' daysToProcess{days} '\' currFolders(i).name '\rightLobe\' fileToCopy folderToRunKmeansOn{j} '.mat']);
                     cd([startDir '\' currFolders(i).name])
                 end
             end

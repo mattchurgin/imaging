@@ -39,7 +39,10 @@ for i=1:nclusters
         for j=1:length(idx2)
             temp(CC.PixelIdxList{idx2(j)}) = 0;
         end
-  
+        
+        se=strel('cuboid',[2 2 1]);
+        temp=imerode(temp,se);
+    
         % remove small and large objects again
         CC = bwconncomp(temp);
         numPixels = cellfun(@numel,CC.PixelIdxList);
@@ -59,6 +62,8 @@ for i=1:nclusters
     end
     
     % get processed cluster info
+
+    
     CC = bwconncomp(temp);
     clusterInfo{i}=regionprops(CC,'basic');
     
