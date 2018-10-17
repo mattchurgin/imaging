@@ -289,6 +289,7 @@ for i=1:size(myOR,2)
         disp(['calculated cross-correlation for cluster ' num2str(i) ' of ' num2str(size(myOR,2)) ', glomerulus ' num2str(j)])
     end
 end
+
 disp(['time elapsed to compute cross-correlations: ' num2str(toc) ' seconds'])
 
 save(['intermediateAssignment_' savesuffix '.mat'], 'myOR', 'pubOR', 'shapePriorNorm', 'physDist', 'fullOdorRankCorr', 'odorRankCorr','pubPairwiseDistRank', 'rawClustersToDelete','slicesToRemove', 'pubNames', 'pubGlomNames','clusterfilename','clustersManuallyOmitted','omitAtlasZslices','minResponse','savesuffix','cX','cY','cZ','pubX','pubY','pubZ')

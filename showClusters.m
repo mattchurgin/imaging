@@ -13,14 +13,19 @@ camlight
 lighting gouraud
 
 hold on
-mycmap=distinguishable_colors(length(clusterVolU));
+
+rng('default')
+mycmap=hsv(length(clusterVolU));
+mycmap=mycmap(randperm(length(clusterVolU)),:);
 
 for i=1:length(clusterVolU)
-    p2=patch(isosurface(clusterVolU{i}),'FaceColor',mycmap(i,:),'EdgeColor','none','FaceAlpha',0.3);
+    p2=patch(isosurface(clusterVolU{i}),'FaceColor',mycmap(i,:),'EdgeColor','none','FaceAlpha',0.4);
     isonormals(clusterVolU{i},p2)
     if length(labels)<1
         text(clusterInfoU{i}.Centroid(1),clusterInfoU{i}.Centroid(2),clusterInfoU{i}.Centroid(3),num2str(i),'FontSize',20,'FontWeight','Bold')
     else
         text(clusterInfoU{i}.Centroid(1),clusterInfoU{i}.Centroid(2),clusterInfoU{i}.Centroid(3),labels{i},'FontSize',20,'FontWeight','Bold')
     end
+    %drawnow
+    %pause
 end
