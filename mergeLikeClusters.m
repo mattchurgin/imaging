@@ -1,7 +1,7 @@
 function [clusterVolNew clusterInfoNew] = mergeLikeClusters(clusterVolU,clusterInfoU,grnResponse)
 
 physDistThreshold=30;
-corrThreshold=0.85;
+corrThreshold=0.8;
 
 clusterCorrelation=NaN*zeros(size(grnResponse,2),size(grnResponse,2));
 physDist=NaN*zeros(size(grnResponse,2),size(grnResponse,2));
