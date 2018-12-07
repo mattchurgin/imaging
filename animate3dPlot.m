@@ -5,16 +5,16 @@ function [] = animate3dPlot(filename)
 if ~strcmp(filename(end-2:end),'gif')
     filename=[filename '.gif'];
 end
-elevationAngle=80;
+elevationAngle=60;
 startAz=270; % starting azimuth angle
 revolutions=1; % number of revolutions to complete
 
 for az=startAz:2:(startAz+revolutions*360)
     view([az,elevationAngle])
     pause(0.05)
-    set(gca,'XTick',[50:50:250])
-    set(gca,'YTick',[50:50:250])
-    set(gca,'ZTick',[2:2:10])
+    set(gca,'XTick',[])
+    set(gca,'YTick',[])
+    set(gca,'ZTick',[])
     drawnow
     
     % Capture the plot as an image
