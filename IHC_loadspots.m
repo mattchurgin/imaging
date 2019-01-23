@@ -1,6 +1,6 @@
 clear all 
 close all
-load(['leftLobe_processed/segmented.mat'])
+load(['leftLobe_processed/segmented.mat']) % redo this with full resolution image
 
 
 folderName='leftLobe_normalresolution_spots';
