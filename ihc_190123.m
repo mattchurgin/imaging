@@ -1,7 +1,7 @@
 clear all
 close all
 
-filePrefix='fly12_bothALs_';
+filePrefix='fly27_bothALs_';
 nc82name=[filePrefix 'nc82.tif'];
 spotname=[filePrefix 'spots.tif'];
 surfacename=[filePrefix 'surfaces.tif'];
@@ -30,84 +30,94 @@ for i=1:nc82l
     end
 end
 disp('images loaded')
-%%
-% manually crop single AL with roipoly
-figure;
-imagesc(myim(:,:,50))
-my2dmask=roipoly;
-close all
 
-myim=myim.*my2dmask;
-%% test with 2d watershed and set dynamic threhsold
-
-% set dynamic threshold
-upperthresh=10; % left lobe
-lowerthresh=upperthresh; % left lobe
-%upperthresh=6; % right lobe
-%lowerthresh=2.5;%right lobe
-
-sliceNum=50;
-temp=nc82im(:,:,sliceNum);
-thresh=linspace(upperthresh,lowerthresh,size(nc82im,3));
+%% manually mask left and right lobes
 figure
-subplot(1,2,1)
-imagesc(temp)
+imagesc(nc82im(:,:,30))
+rmask=roipoly;
+lmask=1-rmask;
 
-I = imgaussfilt(temp,2);
-
-im=I<thresh(sliceNum);
-im=imclose(im,strel('disk',2));
-im=bwareaopen(im,1000);
-im=~bwareaopen(~im,1000);
-
-% Distance transform
-imb=bwdist(im);
-
-% Blur
-sigma=3;
-kernel = fspecial('gaussian',4*sigma+1,sigma);
-im2=imfilter(imb,kernel,'symmetric');
+for i=1:nc82l
+   imagesc(rmask.*nc82im(:,:,i))
+   pause(0.05)
+end
+for i=1:nc82l
+   imagesc(lmask.*nc82im(:,:,i))
+   pause(0.05)
+end
 
 
-% Watershed transform
-L = watershed(max(im2(:))-im2);
-
-% Plot
-lblImg = bwlabel(L&~im);
-
-
-subplot(1,2,2);
-imshow(label2rgb(lblImg,'jet','k','shuffle'));
-
-%% test with 2d watershed and set dynamic threhsold (mask by blurred spots channel)
-
-% create blurry spotb
-smoothkernelsize=20;
+%% create masked left and right image
+% create blurry spotb image
+smoothkernelsize=15;
 spotbBlur = imgaussfilt(single(spotim>0),smoothkernelsize);
 disp('blurred spot image')
-minarea=10000000;
+minarea=1000000;
 spotbBlur2 = bwareaopen(spotbBlur,minarea);
 disp('removed small objects')
-spotbBlur3 = ~bwareaopen(~spotbBlur2,minarea);
-disp('removed small lacunae')
 
-obs=regionprops3(spotbBlur3,'all');
+% dilate spotb
+spotbclosed=imclose(spotbBlur2,strel('sphere',4));
 
+% mask nc82 channel
+maskednc82=spotbclosed.*nc82im;
+
+% figure
+% for i=1:nc82l
+% imagesc(maskednc82(:,:,i))
+% pause(0.05)
+% end
+
+rightim=rmask.*maskednc82;
+leftim=lmask.*maskednc82;
+
+gs=30;
+x=[-100:100];
+y=x;
+[xx yy]=meshgrid(x,y);
+gau=1/(length(x)*gs^2)*exp(-(xx.^2+yy.^2)/(2*gs^2));
+for i=1:nc82l
+    temp=rightim(:,:,i);
+    
+    % normalize image intensity to mean within a grid
+   
+    normalizer=conv2(temp,gau,'same');
+    tempn=temp./normalizer;
+    
+    rightim(:,:,i)=tempn;
+    
+    temp2=leftim(:,:,i);
+    
+    % normalize image intensity to mean within a grid
+    normalizer=conv2(temp2,gau,'same');
+    tempn2=temp2./normalizer;
+    
+    leftim(:,:,i)=tempn2;
+    
+    if mod(i,10)==0
+       disp(['normalized slice ' num2str(i)]) 
+    end
+end
 %%
 % set dynamic threshold
-upperthresh=10; % left lobe
+upperthresh=3.5; % left lobe
+lowerthresh=2.9; % left lobe
+upperthresh=25; % left lobe
 lowerthresh=upperthresh; % left lobe
 %upperthresh=6; % right lobe
 %lowerthresh=2.5;%right lobe
 
-sliceNum=50;
-temp=nc82im(:,:,sliceNum);
+
+
+sliceNum=10;
+temp=leftim(:,:,sliceNum);
 thresh=linspace(upperthresh,lowerthresh,size(nc82im,3));
 figure
 subplot(1,2,1)
-imagesc(temp)
+imagesc(temp,[0 100])
 
-I = imgaussfilt(temp,2);
+I = (imgaussfilt(temp,2));
+
 
 im=I<thresh(sliceNum);
 im=imclose(im,strel('disk',2));
@@ -133,16 +143,19 @@ lblImg = bwlabel(L&~im);
 subplot(1,2,2);
 imshow(label2rgb(lblImg,'jet','k','shuffle'));
 
-%% perform watershed transform on entire z-stack
-myimtrunc=myim(:,:,1:end);
+%% perform watershed transform on entire z-stack downsampled by 2 in x + y with gradient
+downsamplefactor=1;
+%myimtrunc=maskednc82(1:downsamplefactor:end,1:downsamplefactor:end,1:end);
+myimtrunc=imresize(leftim,[round(size(maskednc82,1)/downsamplefactor) round(size(maskednc82,2)/downsamplefactor)],'bilinear');
+%myimtrunc=myimtrunc(:,:,10:20);
 
 thresh=linspace(upperthresh,lowerthresh,size(myimtrunc,3)); 
 
 thresholdedim=zeros(size(myimtrunc));
 for sliceNum=1:size(myimtrunc,3)
-    temp=myimtrunc(:,:,sliceNum);
-    
-    I = imgaussfilt(temp,2);
+    tempn=myimtrunc(:,:,sliceNum);
+   
+    I = imgaussfilt(tempn,2);
     
     im=I<thresh(sliceNum);
     im=imclose(im,strel('disk',2));
@@ -153,8 +166,9 @@ end
 
 % reverse z - dimension (so slice 1 is bottom and final slice is the top)
 thresholdedim=thresholdedim(:,:,end:-1:1);
-
+myimtrunc=myimtrunc(:,:,end:-1:1);
 disp('finished pre-processing z-stack')
+
 % Distance transform
 imb=bwdist(thresholdedim);
 
@@ -169,36 +183,19 @@ minSuppressionThreshold=2;
 preL=max(im2(:))-im2;
 preL2=imhmin(preL,minSuppressionThreshold); % default 5, revise imhmin threshold to 3 or 4?
 L = watershed(preL2);
-
 lblImg = bwlabeln(L&~thresholdedim);
+
+figure
+subplot(1,2,1)
+imagesc(myimtrunc(:,:,end-10))
+subplot(1,2,2)
+imagesc(lblImg(:,:,end-10))
+
 disp(['finished. time elapsed: ' num2str(toc)])
-%%
-disp('beginning to find pixel islands')
-
-warning('off')
-areathresh=50000;
-lbls=regionprops(lblImg,'all');
-todelete=[];
-clusterVols=cell(1,length(lbls));
-clusterInfo=cell(1,length(lbls));
-for j=1:length(lbls)
-    if lbls(j).Area>areathresh
-        clusterVols{j}=(lblImg==j);
-        clusterInfo{j}=lbls(j);
-    else
-        todelete=[todelete j];
-    end
-    if mod(j,100)==0
-       disp(['post-processed ' num2str(j)]) 
-    end
-end
-clusterVols(todelete)=[];
-clusterInfo(todelete)=[];
-
 
 %% plot each labelled slice
 figure
-filename='leftLobe_nc82_zslices_2.gif';
+filename='left_nc82_watershed.gif';
 for i=1:size(lblImg,3)
 
     imagesc(lblImg(:,:,i))
@@ -224,35 +221,15 @@ for i=1:size(lblImg,3)
     end
     
 end
-%% plot with isosurface
-disp(['plotting results. found ' num2str(length(clusterVols)) ' voxel islands'])
 
-% plot results
-figure
-view(3);
-axis tight
-camlight
-lighting gouraud
-
-hold on
-
-rng('default')
-mycmap=hsv(length(clusterVols));
-mycmap=mycmap(randperm(length(mycmap),:));
-
-for i=1:length(clusterVols)
-    p2=patch(isosurface(clusterVols{i}),'FaceColor',mycmap(i,:),'EdgeColor','none','FaceAlpha',0.4);
-    isonormals(clusterVols{i},p2)
-
-    drawnow
- 
-end
 %% downsample each dim by a factor of 2 to see if it speeds things up
-lbl2=lblImg(1:2:end,1:2:end,1:2:end); %
+
+downsamplefactor=2;
+lbl2=imresize(lblImg,[round(size(maskednc82,1)/downsamplefactor) round(size(maskednc82,2)/downsamplefactor)],'nearest');
 disp('beginning to find pixel islands')
 
 warning('off')
-areathresh=10000;
+areathresh=5000;
 areathreshhigh=600000;
 lbls=regionprops(lbl2,'all');
 todelete=[];
