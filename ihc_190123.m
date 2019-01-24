@@ -220,9 +220,10 @@ im2=imb; % good results with no smoothing before
 % Watershed transform
 tic
 disp('beginning watershed transform')
-minSuppressionThreshold=5; 
+minSuppressionThreshold=5; % was 5. try other (higher values)
 preL=max(im2(:))-im2;
 preL2=imhmin(preL,minSuppressionThreshold); % default 5, revise imhmin threshold to 3 or 4?
+% add smoothing function here to smooth preL2?
 L = watershed(preL2);
 lblImg = bwlabeln(L&~thresholdedim);
 
