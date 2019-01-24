@@ -31,36 +31,81 @@ for i=1:nc82l
 end
 disp('images loaded')
 
+
+gs=30;
+x=[-100:100];
+y=x;
+z=-2:2;
+[xx yy zz]=meshgrid(x,y,z);
+gau=1/(length(x)*gs^2)*exp(-(xx.^2+yy.^2 +zz.^2)/(2*gs^2));
+nc82norm=zeros(size(nc82im));
+surfacenorm=zeros(size(surfaceim));
+for i=1:nc82l
+    temp=nc82im(:,:,i);
+    
+    % normalize image intensity to mean within a grid
+    normalizer=convn(temp,gau,'same');
+    tempn=temp./normalizer;
+    
+    nc82norm(:,:,i)=tempn;
+    
+    temp2=surfaceim(:,:,i);
+    
+    % normalize image intensity to mean within a grid
+%     normalizes=convn(temp2,gau,'same');
+%     temps=temp2./normalizes;
+%     
+%     surfacenorm(:,:,i)=temps;
+%     
+    if mod(i,1)==0
+        disp(['normalized slice ' num2str(i)])
+    end
+end
+disp('done normalizing images')
 %% manually mask left and right lobes
 figure
-imagesc(nc82im(:,:,30))
+imagesc(nc82norm(:,:,30))
 rmask=roipoly;
 lmask=1-rmask;
 
 for i=1:nc82l
-   imagesc(rmask.*nc82im(:,:,i))
+   imagesc(rmask.*nc82norm(:,:,i),[0 100])
    pause(0.05)
 end
 for i=1:nc82l
-   imagesc(lmask.*nc82im(:,:,i))
+   imagesc(lmask.*nc82norm(:,:,i),[0 100])
    pause(0.05)
 end
 
-
+%% try blurring spot image better
+% smoothkernelsize=20;
+% spotbBlur = imgaussfilt3(single(spotim>0),[smoothkernelsize smoothkernelsize 5]);
+% 
+% spotopened=imopen(spotbBlur>0,strel('sphere',10));
+% 
+% disp('blurred spot image')
+% minarea=1000000;
+% spotbBlur2 = bwareaopen(spotopened,minarea);
+% 
+% figure;imagesc(spotopened(:,:,50))
+% figure;imagesc(spotbBlur2(:,:,50))
 %% create masked left and right image
 % create blurry spotb image
-smoothkernelsize=15;
-spotbBlur = imgaussfilt(single(spotim>0),smoothkernelsize);
+smoothkernelsize=20;
+spotbBlur = imgaussfilt3(single(spotim>0),[smoothkernelsize smoothkernelsize 5]);
+%spotbBlur=imclose(single(spotim>0),strel('sphere',5));
 disp('blurred spot image')
 minarea=1000000;
 spotbBlur2 = bwareaopen(spotbBlur,minarea);
 disp('removed small objects')
 
 % dilate spotb
-spotbclosed=imclose(spotbBlur2,strel('sphere',4));
+spotbclosed=imopen(spotbBlur2,strel('sphere',5));
 
-% mask nc82 channel
-maskednc82=spotbclosed.*nc82im;
+% mask nc82 channel and surface im
+maskednc82=spotbclosed.*nc82norm;
+%maskedsurface=spotbBlur2.*surfacenorm;
+
 
 % figure
 % for i=1:nc82l
@@ -71,58 +116,52 @@ maskednc82=spotbclosed.*nc82im;
 rightim=rmask.*maskednc82;
 leftim=lmask.*maskednc82;
 
-gs=30;
-x=[-100:100];
-y=x;
-[xx yy]=meshgrid(x,y);
-gau=1/(length(x)*gs^2)*exp(-(xx.^2+yy.^2)/(2*gs^2));
+leftim(isnan(leftim))=0;
+rightim(isnan(rightim))=0;
+
+
+% [lx ly lz]=gradient(leftim);
+% lgrad=sqrt(lx.^2+ly.^2+lz.^2);
+% [rx ry rz]=gradient(rightim);
+% rgrad=sqrt(rx.^2+ry.^2+rz.^2);
+disp('done normalizing')
+
+%% look at masked nc82 and surface im
+
 for i=1:nc82l
-    temp=rightim(:,:,i);
-    
-    % normalize image intensity to mean within a grid
-   
-    normalizer=conv2(temp,gau,'same');
-    tempn=temp./normalizer;
-    
-    rightim(:,:,i)=tempn;
-    
-    temp2=leftim(:,:,i);
-    
-    % normalize image intensity to mean within a grid
-    normalizer=conv2(temp2,gau,'same');
-    tempn2=temp2./normalizer;
-    
-    leftim(:,:,i)=tempn2;
-    
-    if mod(i,10)==0
-       disp(['normalized slice ' num2str(i)]) 
-    end
+
+   imagesc(rmask.*maskednc82(:,:,i))
+
+   pause(0.05)
 end
+for i=1:nc82l
+
+   imagesc(lmask.*maskednc82(:,:,i))
+
+   pause(0.05)
+end
+
 %%
 % set dynamic threshold
-upperthresh=3.5; % left lobe
-lowerthresh=2.9; % left lobe
-upperthresh=25; % left lobe
-lowerthresh=upperthresh; % left lobe
-%upperthresh=6; % right lobe
-%lowerthresh=2.5;%right lobe
+upperthresh=30; 
+lowerthresh=upperthresh; 
 
-
-
-sliceNum=10;
+sliceNum=20;
 temp=leftim(:,:,sliceNum);
 thresh=linspace(upperthresh,lowerthresh,size(nc82im,3));
 figure
 subplot(1,2,1)
 imagesc(temp,[0 100])
 
+% se = strel('disk',2);
+% %temp2=imsubtract(imadd(temp,imtophat(temp,se)),imbothat(temp,se));
+ temp2=imopen(temp,se);
 I = (imgaussfilt(temp,2));
 
-
 im=I<thresh(sliceNum);
-im=imclose(im,strel('disk',2));
-im=bwareaopen(im,1000);
-im=~bwareaopen(~im,1000);
+im=imopen(im,strel('disk',5));
+im=bwareaopen(im,100);
+im=~bwareaopen(~im,100);
 
 % Distance transform
 imb=bwdist(im);
@@ -154,13 +193,14 @@ thresh=linspace(upperthresh,lowerthresh,size(myimtrunc,3));
 thresholdedim=zeros(size(myimtrunc));
 for sliceNum=1:size(myimtrunc,3)
     tempn=myimtrunc(:,:,sliceNum);
-   
-    I = imgaussfilt(tempn,2);
+    tempn2=imopen(tempn,strel('disk',2));
+    
+    I = imgaussfilt(tempn2,2);
     
     im=I<thresh(sliceNum);
-    im=imclose(im,strel('disk',2));
-    im=bwareaopen(im,1000);
-    im=~bwareaopen(~im,1000);
+    im=imopen(im,strel('disk',2));
+    im=bwareaopen(im,100);
+    im=~bwareaopen(~im,100);
     thresholdedim(:,:,sliceNum)=im;
 end
 
@@ -173,13 +213,14 @@ disp('finished pre-processing z-stack')
 imb=bwdist(thresholdedim);
 
 % Blur
-sigma=3;
-im2=imgaussfilt3(imb,sigma);
+ %sigma=3;
+ %im2=imgaussfilt3(imb,sigma);
+im2=imb; % good results with no smoothing before
 
 % Watershed transform
 tic
 disp('beginning watershed transform')
-minSuppressionThreshold=2;
+minSuppressionThreshold=5; 
 preL=max(im2(:))-im2;
 preL2=imhmin(preL,minSuppressionThreshold); % default 5, revise imhmin threshold to 3 or 4?
 L = watershed(preL2);
@@ -187,9 +228,9 @@ lblImg = bwlabeln(L&~thresholdedim);
 
 figure
 subplot(1,2,1)
-imagesc(myimtrunc(:,:,end-10))
+imagesc(myimtrunc(:,:,end-5),[0 100])
 subplot(1,2,2)
-imagesc(lblImg(:,:,end-10))
+imagesc(lblImg(:,:,end-5))
 
 disp(['finished. time elapsed: ' num2str(toc)])
 
@@ -197,7 +238,9 @@ disp(['finished. time elapsed: ' num2str(toc)])
 figure
 filename='left_nc82_watershed.gif';
 for i=1:size(lblImg,3)
-
+    subplot(1,2,1)
+    imagesc(myimtrunc(:,:,i),[0 100])
+    subplot(1,2,2)
     imagesc(lblImg(:,:,i))
     
     set(gca,'XTick',[])
@@ -215,9 +258,9 @@ for i=1:size(lblImg,3)
     
      % Write to the GIF File
     if i == 1
-        imwrite(imind,cm,filename,'gif', 'Loopcount',inf,'DelayTime',0.1);
+        imwrite(imind,cm,filename,'gif', 'Loopcount',inf,'DelayTime',0.5);
     else
-        imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0.1);
+        imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0.51);
     end
     
 end
