@@ -91,7 +91,7 @@ disp('removed small objects')
 spotbBlur3 = ~bwareaopen(~spotbBlur2,minarea);
 disp('removed small lacunae')
 
-obs=regionprops3(spotbBlur3,'all');
+obs=regionprops(~spotbBlur3);
 
 %%
 % set dynamic threshold
