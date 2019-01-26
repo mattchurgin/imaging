@@ -33,35 +33,16 @@ disp('images loaded')
 
 
 gs=30;
-x=[-100:100];
+x=[-50:50];
 y=x;
-z=-4:4; % was -2:2
+z=-4:4; 
 [xx yy zz]=meshgrid(x,y,z);
 gau=1/(length(x)*gs^2)*exp(-(xx.^2+yy.^2 +zz.^2)/(2*gs^2));
-nc82norm=zeros(size(nc82im));
-surfacenorm=zeros(size(surfaceim));
-for i=1:nc82l
-    temp=nc82im(:,:,i);
-    
-    % normalize image intensity to mean within a grid
-    normalizer=convn(temp,gau,'same');
-    tempn=temp./normalizer;
-    
-    nc82norm(:,:,i)=tempn;
-    
-    temp2=surfaceim(:,:,i);
-    
-    % normalize image intensity to mean within a grid
-%     normalizes=convn(temp2,gau,'same');
-%     temps=temp2./normalizes;
-%     
-%     surfacenorm(:,:,i)=temps;
-%     
-    if mod(i,1)==0
-        disp(['normalized slice ' num2str(i)])
-    end
-end
-disp('done normalizing images')
+disp('normalizing nc82 image')
+tic
+nc82norm=nc82im./(convn(nc82im,gau,'same'));
+disp(['normalization convolution done. time elapsed: ' num2str(toc/60) ' minutes'])
+
 %% manually mask left and right lobes
 figure
 imagesc(nc82norm(:,:,30))
@@ -69,11 +50,11 @@ rmask=roipoly;
 lmask=1-rmask;
 
 for i=1:nc82l
-   imagesc(rmask.*nc82norm(:,:,i),[0 100])
+   imagesc(rmask.*nc82norm(:,:,i),[0 30])
    pause(0.05)
 end
 for i=1:nc82l
-   imagesc(lmask.*nc82norm(:,:,i),[0 100])
+   imagesc(lmask.*nc82norm(:,:,i),[0 30])
    pause(0.05)
 end
 
@@ -81,25 +62,17 @@ end
 % create blurry spotb image
 smoothkernelsize=20;
 spotbBlur = imgaussfilt3(single(spotim>0),[smoothkernelsize smoothkernelsize 5]);
-%spotbBlur=imclose(single(spotim>0),strel('sphere',5));
 disp('blurred spot image')
+
 minarea=1000000;
 spotbBlur2 = bwareaopen(spotbBlur,minarea);
 disp('removed small objects')
 
-% dilate spotb
+% open spotb
 spotbclosed=imopen(spotbBlur2,strel('sphere',5));
 
 % mask nc82 channel and surface im
 maskednc82=spotbclosed.*nc82norm;
-%maskedsurface=spotbBlur2.*surfacenorm;
-
-
-% figure
-% for i=1:nc82l
-% imagesc(maskednc82(:,:,i))
-% pause(0.05)
-% end
 
 rightim=rmask.*maskednc82;
 leftim=lmask.*maskednc82;
@@ -107,15 +80,11 @@ leftim=lmask.*maskednc82;
 leftim(isnan(leftim))=0;
 rightim(isnan(rightim))=0;
 
-
-% [lx ly lz]=gradient(leftim);
-% lgrad=sqrt(lx.^2+ly.^2+lz.^2);
-% [rx ry rz]=gradient(rightim);
-% rgrad=sqrt(rx.^2+ry.^2+rz.^2);
 disp('done masking')
-%%
-% set dynamic threshold
+
+%% set dynamic threshold
 upperthresh=30;  
+upperthresh=4.5;
 lowerthresh=upperthresh; 
 
 sliceNum=20;
@@ -155,9 +124,7 @@ subplot(1,2,2);
 imshow(label2rgb(lblImg,'jet','k','shuffle'));
 
 %% perform watershed transform on entire z-stack 
-downsamplefactor=1;
-%myimtrunc=maskednc82(1:downsamplefactor:end,1:downsamplefactor:end,1:end);
-myimtrunc=imresize(leftim,[round(size(maskednc82,1)/downsamplefactor) round(size(maskednc82,2)/downsamplefactor)],'bilinear');
+myimtrunc=leftim;
 %myimtrunc=myimtrunc(:,:,10:20);
 
 thresh=linspace(upperthresh,lowerthresh,size(myimtrunc,3)); 
@@ -176,8 +143,7 @@ for sliceNum=1:size(myimtrunc,3)
 end
 
 % open the image in 3d with ellipsoid
-thresholdedim2=imopen(thresholdedim,strel('ball',7,2))==1;
-%thresholdedim2=imopen(thresholdedim,strel('sphere',3));
+thresholdedim2=imopen(thresholdedim,strel('ball',7,3))==1;
 
 % reverse z - dimension (so slice 1 is bottom and final slice is the top)
 thresholdedim2=thresholdedim2(:,:,end:-1:1);
@@ -197,7 +163,7 @@ tic
 disp('beginning watershed transform')
 minSuppressionThreshold=5; % was 5.
 preL=max(im2(:))-im2;
-preL2=imhmin(preL,minSuppressionThreshold); % default 5, revise imhmin threshold to 3 or 4?
+preL2=imhmin(preL,minSuppressionThreshold); 
 L = watershed(preL2);
 lblImg = bwlabeln(L&~thresholdedim2);
 
