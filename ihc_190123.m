@@ -40,7 +40,7 @@ disp('images loaded')
 
 
 gs=30;
-x=[-100:1:100];
+x=[-50:1:50];
 y=x;
 z=-1:1; 
 [xx yy zz]=meshgrid(x,y,z);
