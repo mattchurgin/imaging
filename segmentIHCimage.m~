@@ -58,41 +58,20 @@ tic
 nc82norm=nc82im./(convn(nc82im,gau,'same'));
 
 disp(['nc82 normalization done. time elapsed: ' num2str(toc/60) ' minutes'])
+% 
+% gs=30;
+% x=[-100:1:100];
+% y=x;
+% z=-1:1; 
+% [xx yy zz]=meshgrid(x,y,z);
+% gau=1/(length(x)*gs^2)*exp(-(xx.^2+yy.^2 +zz.^2)/(2*gs^2));
+% disp('normalizing brp-short image')
+% tic
+% brpnorm=brpim./(convn(brpim,gau,'same'));
+% 
+% disp(['brp normalization done. time elapsed: ' num2str(toc/60) ' minutes'])
 
-gs=30;
-x=[-100:1:100];
-y=x;
-z=-1:1; 
-[xx yy zz]=meshgrid(x,y,z);
-gau=1/(length(x)*gs^2)*exp(-(xx.^2+yy.^2 +zz.^2)/(2*gs^2));
-disp('normalizing brp-short image')
-tic
-brpnorm=brpim./(convn(brpim,gau,'same'));
-
-disp(['brp normalization done. time elapsed: ' num2str(toc/60) ' minutes'])
-
-nc82norm=single(nc82norm);
-brpnorm=single(brpnorm);
-spotim=spotim>0;
-save([filePrefix '_normed'],'nc82l','nc82norm','brpnorm','spotim')
-
-%% manually mask left and right lobes
-figure
-imagesc(nc82norm(:,:,30))
-rmask=roipoly;
-lmask=1-rmask;
-
-for i=1:nc82l
-   imagesc(rmask.*nc82norm(:,:,i),[0 30])
-   pause(0.05)
-end
-for i=1:nc82l
-   imagesc(lmask.*nc82norm(:,:,i),[0 30])
-   pause(0.05)
-end
-
-
-%% smooth spot image to remove outlier spots
+% smooth spot image to remove outlier spots
 spotimthresh=0.001;
 minarea=1000000;
 
@@ -117,33 +96,38 @@ binspotpruned=bwareaopen(binspotsmooth,minarea);
 disp('masking nc82 image')
 maskednc82=binspotpruned.*nc82norm;
 
+bothsides=maskednc82;
+
+nc82norm=single(nc82norm);
+brpnorm=single(brpnorm);
+bothsides=single(bothsides);
+spotim=spotim>0;
+save([filePrefix 'normed'],'nc82l','nc82norm','spotim','bothsides')
+
+%% manually mask left and right lobes
+figure
+imagesc(nc82norm(:,:,30))
+rmask=roipoly;
+lmask=~rmask;
+
+for i=1:nc82l
+   imagesc(rmask.*nc82norm(:,:,i),[0 30])
+   pause(0.05)
+end
+for i=1:nc82l
+   imagesc(lmask.*nc82norm(:,:,i),[0 30])
+   pause(0.05)
+end
+
+
+
 rightim=rmask.*maskednc82;
 leftim=lmask.*maskednc82;
 
 leftim(isnan(leftim))=0;
 rightim(isnan(rightim))=0;
 
-bothsides=leftim+rightim;
-
-disp('masking left and right images by brp-short image')
-rightimbrp=rightim.*brpnorm;
-leftimbrp=leftim.*brpnorm;
-
 disp('done')
-% 
-% figure
-% for i=1:nc82l
-%    subplot(1,2,1)
-%    imagesc(rightim(:,:,i))
-% 
-%    subplot(1,2,2)
-%    imagesc(rightimbrp(:,:,i))
-%    
-%    drawnow
-%    
-%    pause(0.05)
-% end
-
 
 %% set threshold on slice
   
@@ -187,168 +171,6 @@ subplot(1,2,2);
 %imshow(label2rgb(lblImg,'jet','k','shuffle'));
 imagesc(lblImg);
 
-%% try marker-controlled water shed
-myimtrunc=bothsides(:,:,end:-1:1);
-
-sliceNum=50;
-thresh=11;
-figure
-for sliceNum=1:nc82l
-I=myimtrunc(:,:,sliceNum);
-I=imgaussfilt(I,2);
-
-gmag = imgradient(I);
-%imshow(gmag,[])
-
-se = strel('disk',10);
-Io = imopen(I,se);
-% figure;
-% subplot(1,2,1);imagesc(I)
-% subplot(1,2,2);imagesc(Io)
-
-se = strel('disk',5);
-Ie = imerode(I,se);
-Iobr = imreconstruct(Ie,I);
-% figure;
-% subplot(1,2,1);imagesc(I)
-% subplot(1,2,2);imagesc(Iobr)
-
-Ioc = imclose(Io,se);
-% figure;
-% subplot(1,2,1);imagesc(I)
-% subplot(1,2,2);imagesc(Ioc)
-
-Iobrd = imdilate(Iobr,se);
-Iobrcbr = imreconstruct(imcomplement(Iobrd),imcomplement(Iobr));
-Iobrcbr = imcomplement(Iobrcbr);
-% subplot(1,2,1);imagesc(I)
-% subplot(1,2,2);imagesc(Iobrcbr)
-
-fgm = imregionalmax(Iobrcbr>thresh);
-% figure
-% subplot(1,2,1);imagesc(I)
-% subplot(1,2,2);imagesc(fgm)
-
-im=bwareaopen(fgm,1000);
-
-
-% Distance transform
-imb=imgaussfilt(bwdist(~im),2);
-
-minSuppressionThreshold=10;
-
-try
-L = watershed(imhmin(max(imb(:))-imb,minSuppressionThreshold));
-templbl = bwlabel(L&im);
-% 
-% se2 = strel(ones(5,5));
-% fgm2 = imclose(fgm,se2);
-% fgm4 = bwareaopen(fgm2,500);
-% %figure;imagesc(I3)
-% % 
-% bw = bwareaopen(Iobrcbr>thresh,500);
-% %figure;imagesc(bw)
-% D = bwdist(bw);
-% DL = watershed(D);
-% bgm = DL == 0;
-% %imagesc(bgm)
-% 
-% gmag2 = imimposemin(gmag, bgm | fgm4);
-% 
-% bw2=imgaussfilt(bwdist(gmag2>0),2);
-% 
-% L = watershed(imhmin(max(bw2(:))-bw2,minSuppressionThreshold));
-% templbl2 = bwlabel(L&im);
-
-
-subplot(1,3,1)
-imagesc(I,[0 50])
-
-subplot(1,3,2)
-imagesc(templbl)
-
-% subplot(1,3,3)
-% imagesc(templbl2)
-drawnow
-catch
-end
-
-end
-
-%% try marker-controlled water shed in 3d
-myimtrunc=bothsides(:,:,1:30);
-thresh=10;
-
-tic
-
-disp('smoothing image')
-I=myimtrunc;
-I=imgaussfilt3(I,[2 2 1]);
-
-% gmag = imgradient(I);
-% %imshow(gmag,[])
-
-disp('opening image')
-se = strel('ball',10,3);
-Io = imopen(I,se);
-% figure;
-% subplot(1,2,1);imagesc(I)
-% subplot(1,2,2);imagesc(Io)
-
-disp('eroding image')
-se = strel('ball',5,2);
-Ie = imerode(I,se);
-Iobr = imreconstruct(Ie,I);
-% figure;
-% subplot(1,2,1);imagesc(I)
-% subplot(1,2,2);imagesc(Iobr)
-
-disp('closing image')
-Ioc = imclose(Io,se);
-% figure;
-% subplot(1,2,1);imagesc(I)
-% subplot(1,2,2);imagesc(Ioc)
-
-disp('dilating image')
-Iobrd = imdilate(Iobr,se);
-Iobrcbr = imreconstruct(imcomplement(Iobrd),imcomplement(Iobr));
-Iobrcbr = imcomplement(Iobrcbr);
-% subplot(1,2,1);imagesc(I)
-% subplot(1,2,2);imagesc(Iobrcbr)
-
-disp('finding regional max')
-fgm = imregionalmax(Iobrcbr>thresh);
-% figure
-% subplot(1,2,1);imagesc(I)
-% subplot(1,2,2);imagesc(fgm)
-
-im=bwareaopen(fgm,1000);
-
-
-% Distance transform
-disp('calculating distance transform')
-imb=imgaussfilt3(bwdist(~im),[2 2 1]);
-
-minSuppressionThreshold=5;
-
-disp('calculat watershed')
-L = watershed(imhmin(max(imb(:))-imb,minSuppressionThreshold));
-templbl = bwlabeln(L&im);
-disp(['time elapsed: ' num2str(toc/60) ' minutes'])
-
-disp('done')
-
-figure
-for i=1:size(myimtrunc,3)
-    subplot(1,2,1)
-    imagesc(myimtrunc(:,:,i),[0 50])
-    
-    subplot(1,2,2)
-    imagesc(templbl(:,:,i))
-    
-    drawnow
-    pause(0.1)
-end
 %% perform watershed on each 2d slice in z-stack
   
 myimtrunc=bothsides(:,:,end:-1:1);
@@ -454,7 +276,7 @@ imagesc(lblImg3d(:,:,end-5))
 
 disp(['finished. time elapsed: ' num2str(toc)])
 
-save([filePrefix 'watershed.mat'],'lblImg','lblImg3d','bothsides','rmask','lmask')
+save([filePrefix 'watershed.mat'],'lblImg','lblImg3d','bothsides')
 %% step through labelled slices
 figure
 for i=1:nc82l
@@ -559,3 +381,377 @@ end
 disp('done plotting')
 
 
+%% marker-controlled water shed on slices
+myimtrunc=bothsides(:,:,end:-1:1);
+
+sliceNum=50;
+thresh=10;
+figure
+for sliceNum=70
+I=myimtrunc(:,:,sliceNum);
+I=imgaussfilt(I,2);
+
+gmag = imgradient(I);
+%imshow(gmag,[])
+
+se = strel('disk',8);
+Io = imopen(I,se);
+% figure;
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(Io)
+
+se = strel('disk',8);
+Ie = imerode(I,se);
+Iobr = imreconstruct(Ie,I);
+% figure;
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(Iobr)
+
+Ioc = imclose(Io,se);
+% figure;
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(Ioc)
+
+Iobrd = imdilate(Iobr,se);
+Iobrcbr = imreconstruct(imcomplement(Iobrd),imcomplement(Iobr));
+Iobrcbr = imcomplement(Iobrcbr);
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(Iobrcbr)
+
+fgm = imregionalmax(Iobrcbr>thresh);
+% figure
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(fgm)
+
+im=bwareaopen(fgm,1000);
+
+
+% Distance transform
+imb=imgaussfilt(bwdist(~im),2);
+
+minSuppressionThreshold=10;
+
+try
+L = watershed(imhmin(max(imb(:))-imb,minSuppressionThreshold));
+templbl = bwlabel(L&im);
+% 
+% se2 = strel(ones(5,5));
+% fgm2 = imclose(fgm,se2);
+% fgm4 = bwareaopen(fgm2,500);
+% %figure;imagesc(I3)
+% % 
+% bw = bwareaopen(Iobrcbr>thresh,500);
+% %figure;imagesc(bw)
+% D = bwdist(bw);
+% DL = watershed(D);
+% bgm = DL == 0;
+% %imagesc(bgm)
+% 
+% gmag2 = imimposemin(gmag, bgm | fgm4);
+% 
+% bw2=imgaussfilt(bwdist(gmag2>0),2);
+% 
+% L = watershed(imhmin(max(bw2(:))-bw2,minSuppressionThreshold));
+% templbl2 = bwlabel(L&im);
+
+
+subplot(1,3,1)
+imagesc(I,[0 50])
+
+subplot(1,3,2)
+imagesc(templbl)
+
+% subplot(1,3,3)
+% imagesc(templbl2)
+drawnow
+catch
+end
+
+end
+
+%% marker-controlled water shed on entire volume
+myimtrunc=bothsides(:,:,(end-1):-1:2); % cut off first and last slices
+
+thresh=12; 
+
+tic
+
+disp('smoothing image')
+I=myimtrunc;
+I=imgaussfilt3(I,[2 2 1]);
+disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+
+% gmag = imgradient(I);
+% %imshow(gmag,[])
+
+% disp('opening image')
+% %se = strel('ball',10,3);
+% se = strel('ball',10,4);
+% Io = imopen(I,se);
+% disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+% figure;
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(Io)
+
+disp('eroding image')
+se = strel('ball',5,2); 
+se = strel('ball',3,1); 
+Ie = imerode(I,se);
+Iobr = imreconstruct(Ie,I);
+disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+% figure;
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(Iobr)
+
+% disp('closing image')
+% se = strel('ball',3,1);
+% Ioc = imclose(Io,se);
+% disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+% figure;
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(Ioc)
+
+disp('dilating image')
+se = strel('ball',10,5);
+Iobrd = imdilate(Iobr,se);
+Iobrcbr = imreconstruct(imcomplement(Iobrd),imcomplement(Iobr));
+Iobrcbr = imcomplement(Iobrcbr);
+disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(Iobrcbr)
+
+disp('finding regional max')
+fgm = imregionalmax(Iobrcbr>thresh);
+disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+% figure
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(fgm)
+
+im=fgm;
+%im=bwareaopen(im,1000);
+%im=~bwareaopen(~im,5000);
+
+
+% Distance transform
+disp('calculating distance transform')
+
+imb=imgaussfilt3(bwdist(~im),[2 2 1]);
+
+disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+
+minSuppressionThreshold=5; % was 5
+
+disp('calculating watershed transform')
+L = watershed(imhmin(max(imb(:))-imb,minSuppressionThreshold));
+templbl = bwlabeln(L&im);
+disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+
+disp('finished watershed')
+
+% find pixel islands and plot
+lbl2=templbl;
+disp('finding pixel islands')
+
+warning('off')
+areathresh=5000;
+
+lbls=regionprops(lbl2,'all');
+todelete=[];
+clusterVols2=cell(1,length(lbls));
+clusterInfo2=cell(1,length(lbls));
+for j=1:length(lbls)
+    if lbls(j).Area>areathresh 
+        clusterVols2{j}=(lbl2==j);
+        clusterInfo2{j}=lbls(j);
+    else
+        todelete=[todelete j];
+    end
+    if mod(j,10)==0
+       disp(['processed ' num2str(j)]) 
+    end
+end
+clusterVols2(todelete)=[];
+clusterInfo2(todelete)=[];
+
+disp(['plotting results. found ' num2str(length(clusterVols2)) ' voxel islands'])
+
+% plot downsampled results
+downsamples=4;
+
+figure
+view(3);
+axis tight
+camlight
+lighting gouraud
+
+hold on
+
+rng('default')
+mycmap=hsv(length(clusterVols2));
+mycmap=mycmap(randperm(length(mycmap)),:);
+
+randv=randperm(length(clusterVols2));
+j=1;
+for i=randv
+    p2=patch(isosurface(clusterVols2{i}(downsamples:downsamples:end,downsamples:downsamples:end,:)),'FaceColor',mycmap(i,:),'EdgeColor','none','FaceAlpha',0.8);
+    isonormals(clusterVols2{i}(downsamples:downsamples:end,downsamples:downsamples:end,:),p2)
+
+    drawnow
+    disp(['plotted island ' num2str(j) ' of ' num2str(length(clusterVols2))])
+    j=j+1;
+end
+disp('done plotting')
+
+save([filePrefix 'watershednew.mat'],'templbl','bothsides','thresh')
+
+%% try different parameters
+%% marker-controlled water shed in 3d
+myimtrunc=bothsides(:,:,(end-1):-1:2);
+thresh=10.5;
+
+tic
+
+disp('smoothing image')
+I=myimtrunc;
+I=imgaussfilt3(I,[2 2 1]);
+disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+
+% gmag = imgradient(I);
+% %imshow(gmag,[])
+
+% disp('opening image')
+% se = strel('ball',10,4);
+% Io = imopen(I,se);
+% disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+% figure;
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(Io)
+
+disp('opening image by reconstruction')
+%se = strel('ball',5,2); % default here!
+se = strel('ball',10,1); % z= 1 works
+se = strel('ball',5,1); % z= 1 works
+Ie = imerode(I,se);
+Iobr = imreconstruct(Ie,I);
+disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+% figure;
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(Iobr)
+
+% disp('closing image')
+% se = strel('ball',3,1);
+% Ioc = imclose(Io,se);
+% disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+% figure;
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(Ioc)
+
+disp('dilating image')
+%se = strel('ball',8,2);
+se = strel('ball',10,3); % z= 3 works
+Iobrd = imdilate(Iobr,se);
+Iobrcbr = imreconstruct(imcomplement(Iobrd),imcomplement(Iobr));
+Iobrcbr = imcomplement(Iobrcbr);
+disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(Iobrcbr)
+
+disp('finding regional max')
+fgm = imregionalmax(Iobrcbr>thresh);
+disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+% figure
+% subplot(1,2,1);imagesc(I)
+% subplot(1,2,2);imagesc(fgm)
+
+im=bwareaopen(fgm,1000);
+%im=~bwareaopen(~im,1000);
+
+
+% Distance transform
+disp('calculating distance transform')
+
+imb=imgaussfilt3(bwdist(~im),[2 2 1]);
+
+disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+
+minSuppressionThreshold=5; % was 5
+
+disp('calculating watershed transform')
+L = watershed(imhmin(max(imb(:))-imb,minSuppressionThreshold));
+templbl = bwlabeln(L&im);
+disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+
+disp('finished watershed')
+
+% find pixel islands and plot
+lbl2=templbl;
+disp('finding pixel islands')
+
+warning('off')
+areathresh=5000;
+
+lbls=regionprops(lbl2,'all');
+todelete=[];
+clusterVols2=cell(1,length(lbls));
+clusterInfo2=cell(1,length(lbls));
+for j=1:length(lbls)
+    if lbls(j).Area>areathresh 
+        clusterVols2{j}=(lbl2==j);
+        clusterInfo2{j}=lbls(j);
+    else
+        todelete=[todelete j];
+    end
+    if mod(j,10)==0
+       disp(['processed ' num2str(j)]) 
+    end
+end
+clusterVols2(todelete)=[];
+clusterInfo2(todelete)=[];
+
+disp(['plotting results. found ' num2str(length(clusterVols2)) ' voxel islands'])
+
+% plot downsampled results
+downsamples=4;
+
+figure
+view(3);
+axis tight
+camlight
+lighting gouraud
+
+hold on
+
+rng('default')
+mycmap=hsv(length(clusterVols2));
+mycmap=mycmap(randperm(length(mycmap)),:);
+
+randv=randperm(length(clusterVols2));
+j=1;
+for i=randv
+    p2=patch(isosurface(clusterVols2{i}(downsamples:downsamples:end,downsamples:downsamples:end,:)),'FaceColor',mycmap(i,:),'EdgeColor','none','FaceAlpha',0.8);
+    isonormals(clusterVols2{i}(downsamples:downsamples:end,downsamples:downsamples:end,:),p2)
+
+    drawnow
+    disp(['plotted island ' num2str(j) ' of ' num2str(length(clusterVols2))])
+    j=j+1;
+end
+disp('done plotting')
+save([filePrefix 'watershednew.mat'],'templbl')
+%% step through labelled slices
+figure
+for i=1:size(templbl,3)
+    subplot(1,2,1)
+    imagesc(myimtrunc(:,:,i),[0 30])
+    
+%     subplot(1,3,2)
+%     imagesc(lblImg3d(:,:,i))
+%     
+    subplot(1,2,2)
+    imagesc(templbl(:,:,i))
+
+    
+
+    drawnow
+    %pause(0.05)
+   % pause
+end

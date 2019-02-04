@@ -58,41 +58,20 @@ tic
 nc82norm=nc82im./(convn(nc82im,gau,'same'));
 
 disp(['nc82 normalization done. time elapsed: ' num2str(toc/60) ' minutes'])
+% 
+% gs=30;
+% x=[-100:1:100];
+% y=x;
+% z=-1:1; 
+% [xx yy zz]=meshgrid(x,y,z);
+% gau=1/(length(x)*gs^2)*exp(-(xx.^2+yy.^2 +zz.^2)/(2*gs^2));
+% disp('normalizing brp-short image')
+% tic
+% brpnorm=brpim./(convn(brpim,gau,'same'));
+% 
+% disp(['brp normalization done. time elapsed: ' num2str(toc/60) ' minutes'])
 
-gs=30;
-x=[-100:1:100];
-y=x;
-z=-1:1; 
-[xx yy zz]=meshgrid(x,y,z);
-gau=1/(length(x)*gs^2)*exp(-(xx.^2+yy.^2 +zz.^2)/(2*gs^2));
-disp('normalizing brp-short image')
-tic
-brpnorm=brpim./(convn(brpim,gau,'same'));
-
-disp(['brp normalization done. time elapsed: ' num2str(toc/60) ' minutes'])
-
-nc82norm=single(nc82norm);
-brpnorm=single(brpnorm);
-spotim=spotim>0;
-save([filePrefix 'normed'],'nc82l','nc82norm','brpnorm','spotim')
-
-%% manually mask left and right lobes
-figure
-imagesc(nc82norm(:,:,30))
-rmask=roipoly;
-lmask=~rmask;
-
-for i=1:nc82l
-   imagesc(rmask.*nc82norm(:,:,i),[0 30])
-   pause(0.05)
-end
-for i=1:nc82l
-   imagesc(lmask.*nc82norm(:,:,i),[0 30])
-   pause(0.05)
-end
-
-
-%% smooth spot image to remove outlier spots
+% smooth spot image to remove outlier spots
 spotimthresh=0.001;
 minarea=1000000;
 
@@ -117,33 +96,38 @@ binspotpruned=bwareaopen(binspotsmooth,minarea);
 disp('masking nc82 image')
 maskednc82=binspotpruned.*nc82norm;
 
+bothsides=maskednc82;
+
+nc82norm=single(nc82norm);
+brpnorm=single(brpnorm);
+bothsides=single(bothsides);
+spotim=spotim>0;
+save([filePrefix 'normed'],'nc82l','nc82norm','spotim','bothsides')
+
+%% manually mask left and right lobes
+figure
+imagesc(nc82norm(:,:,30))
+rmask=roipoly;
+lmask=~rmask;
+
+for i=1:nc82l
+   imagesc(rmask.*nc82norm(:,:,i),[0 30])
+   pause(0.05)
+end
+for i=1:nc82l
+   imagesc(lmask.*nc82norm(:,:,i),[0 30])
+   pause(0.05)
+end
+
+
+
 rightim=rmask.*maskednc82;
 leftim=lmask.*maskednc82;
 
 leftim(isnan(leftim))=0;
 rightim(isnan(rightim))=0;
 
-bothsides=leftim+rightim;
-
-disp('masking left and right images by brp-short image')
-rightimbrp=rightim.*brpnorm;
-leftimbrp=leftim.*brpnorm;
-
 disp('done')
-% 
-% figure
-% for i=1:nc82l
-%    subplot(1,2,1)
-%    imagesc(rightim(:,:,i))
-% 
-%    subplot(1,2,2)
-%    imagesc(rightimbrp(:,:,i))
-%    
-%    drawnow
-%    
-%    pause(0.05)
-% end
-
 
 %% set threshold on slice
   
@@ -292,7 +276,7 @@ imagesc(lblImg3d(:,:,end-5))
 
 disp(['finished. time elapsed: ' num2str(toc)])
 
-save([filePrefix 'watershed.mat'],'lblImg','lblImg3d','bothsides','rmask','lmask')
+save([filePrefix 'watershed.mat'],'lblImg','lblImg3d','bothsides')
 %% step through labelled slices
 figure
 for i=1:nc82l
@@ -397,7 +381,7 @@ end
 disp('done plotting')
 
 
-%% try marker-controlled water shed
+%% marker-controlled water shed on slices
 myimtrunc=bothsides(:,:,end:-1:1);
 
 sliceNum=50;
@@ -485,9 +469,10 @@ end
 
 end
 
-%% try marker-controlled water shed in 3d
-myimtrunc=bothsides(:,:,end:-1:1);
-thresh=10; % 10 worked with some merging
+%% marker-controlled water shed on entire volume
+myimtrunc=bothsides(:,:,(end-1):-1:2); % cut off first and last slices
+
+thresh=10.5; 
 
 tic
 
@@ -499,18 +484,18 @@ disp(['time elapsed: ' num2str(toc/60) ' minutes'])
 % gmag = imgradient(I);
 % %imshow(gmag,[])
 
-disp('opening image')
-%se = strel('ball',10,3);
-se = strel('ball',10,4);
-Io = imopen(I,se);
-disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+% disp('opening image')
+% %se = strel('ball',10,3);
+% se = strel('ball',10,4);
+% Io = imopen(I,se);
+% disp(['time elapsed: ' num2str(toc/60) ' minutes'])
 % figure;
 % subplot(1,2,1);imagesc(I)
 % subplot(1,2,2);imagesc(Io)
 
-disp('eroding image')
-se = strel('ball',5,2);
-%se = strel('ball',10,4);
+disp('opening image by reconstruction')
+se = strel('ball',5,2);  % original
+se = strel('ball',3,1);  % this may work better... less bleed across glomeruli
 Ie = imerode(I,se);
 Iobr = imreconstruct(Ie,I);
 disp(['time elapsed: ' num2str(toc/60) ' minutes'])
@@ -518,14 +503,16 @@ disp(['time elapsed: ' num2str(toc/60) ' minutes'])
 % subplot(1,2,1);imagesc(I)
 % subplot(1,2,2);imagesc(Iobr)
 
-disp('closing image')
-Ioc = imclose(Io,se);
-disp(['time elapsed: ' num2str(toc/60) ' minutes'])
+% disp('closing image')
+% se = strel('ball',3,1);
+% Ioc = imclose(Io,se);
+% disp(['time elapsed: ' num2str(toc/60) ' minutes'])
 % figure;
 % subplot(1,2,1);imagesc(I)
 % subplot(1,2,2);imagesc(Ioc)
 
-disp('dilating image')
+disp('closing by reconstruction')
+se = strel('ball',10,5);
 Iobrd = imdilate(Iobr,se);
 Iobrcbr = imreconstruct(imcomplement(Iobrd),imcomplement(Iobr));
 Iobrcbr = imcomplement(Iobrcbr);
@@ -540,20 +527,19 @@ disp(['time elapsed: ' num2str(toc/60) ' minutes'])
 % subplot(1,2,1);imagesc(I)
 % subplot(1,2,2);imagesc(fgm)
 
-im=bwareaopen(fgm,1000);
+im=fgm;
+%im=bwareaopen(im,1000);
+%im=~bwareaopen(~im,5000);
 
 
 % Distance transform
 disp('calculating distance transform')
-for haha=1:2
-    if haha==1
+
 imb=imgaussfilt3(bwdist(~im),[2 2 1]);
-    else
-        imb=bwdist(~im);
-    end
+
 disp(['time elapsed: ' num2str(toc/60) ' minutes'])
 
-minSuppressionThreshold=5;
+minSuppressionThreshold=4; % was 5
 
 disp('calculating watershed transform')
 L = watershed(imhmin(max(imb(:))-imb,minSuppressionThreshold));
@@ -561,18 +547,6 @@ templbl = bwlabeln(L&im);
 disp(['time elapsed: ' num2str(toc/60) ' minutes'])
 
 disp('finished watershed')
-% 
-% figure
-% for i=1:size(myimtrunc,3)
-%     subplot(1,2,1)
-%     imagesc(myimtrunc(:,:,i),[0 50])
-%     
-%     subplot(1,2,2)
-%     imagesc(templbl(:,:,i))
-%     
-%     drawnow
-%     pause(0.1)
-% end
 
 % find pixel islands and plot
 lbl2=templbl;
@@ -627,4 +601,25 @@ for i=randv
     j=j+1;
 end
 disp('done plotting')
+
+save([filePrefix 'watershednew2.mat'],'templbl','bothsides','thresh','minSuppressionThreshold')
+disp(['done. total time elapsed: ' num2str(toc/60) ' minutes.'])
+
+%% step through labelled slices
+figure
+for i=1:size(templbl,3)
+    subplot(1,2,1)
+    imagesc(myimtrunc(:,:,i),[0 30])
+    
+%     subplot(1,3,2)
+%     imagesc(lblImg3d(:,:,i))
+%     
+    subplot(1,2,2)
+    imagesc(templbl(:,:,i))
+
+    
+
+    drawnow
+    pause(0.05)
+   % pause
 end
