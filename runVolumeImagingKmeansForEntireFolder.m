@@ -5,11 +5,17 @@ clear all
 folderToRunKmeansOn{1}='Volumes';
 folderToRunKmeansOn{2}='Volumes2';
 
-daysToProcess{1}='181023_pairedbehaviorimaging_gh146';
+daysToProcess{1}='190211_orcoOX5gcamp_behaviorandimaging_copy';
 
-fractionOfVarianceTokeep=0.75;
+
+fractionOfVarianceTokeep=.75;
+ORNorPN=0; % 0 for processing ORNs, 1 for PNs
 replicates=50;
-nkmeans=80;
+if ORNorPN==1 % change to dynamically look for gh146 or orco in filename
+    nkmeans=80; % use k=80 for processing PNs
+else
+    nkmeans=30; % use k=30 for processing ORNs
+end
 volsPerOdor=20;
 nchannels=2;
 nvolseries=13;
@@ -56,14 +62,14 @@ disp(['done calculating kmeans.'])
 % run makeClusters.m and processVolumeImagingKmeans.m for all folders
 
 
-rawKmeansOutput='rawKmeans_80clusters_0.75fractionOfVarianceKept_50replicates.mat';
+rawKmeansOutput=['rawKmeans_' num2str(nkmeans) 'clusters_' num2str(fractionOfVarianceTokeep) 'fractionOfVarianceKept_' num2str(replicates) 'replicates.mat'];
 clusterVolFile='clusterVols.mat';
 volumeAcquisitionTime=1.2;
 nChannels=2;
 
 homeDir=pwd;
 for days=1:length(daysToProcess)
-   
+    
     cd(daysToProcess{days})
     startDir=pwd;
     display(['processing folder ' startDir])
@@ -82,8 +88,11 @@ for days=1:length(daysToProcess)
             for j=1:length(folderToRunKmeansOn)
                 if exist(['leftLobe\' folderToRunKmeansOn{j}])
                     cd(['leftLobe\' folderToRunKmeansOn{j}])
-                    [clusterVolU clusterInfoU]=makeClusters(rawKmeansOutput);
-                    [grnResponse t] = processVolumeImagingKmeans(clusterVolFile,rawKmeansOutput,volumeAcquisitionTime,nChannels);
+                    try
+                        [clusterVolU clusterInfoU]=makeClusters(rawKmeansOutput);
+                        [grnResponse t] = processVolumeImagingKmeans(clusterVolFile,rawKmeansOutput,volumeAcquisitionTime,nChannels);
+                    catch
+                    end
                     cd([startDir '\' currFolders(i).name])
                 end
             end
@@ -92,8 +101,11 @@ for days=1:length(daysToProcess)
             for j=1:length(folderToRunKmeansOn)
                 if exist(['rightLobe\'  folderToRunKmeansOn{j}])
                     cd(['rightLobe\'  folderToRunKmeansOn{j}])
-                    [clusterVolU clusterInfoU]=makeClusters(rawKmeansOutput);
-                    [grnResponse t] = processVolumeImagingKmeans(clusterVolFile,rawKmeansOutput,volumeAcquisitionTime,nChannels);
+                    try
+                        [clusterVolU clusterInfoU]=makeClusters(rawKmeansOutput);
+                        [grnResponse t] = processVolumeImagingKmeans(clusterVolFile,rawKmeansOutput,volumeAcquisitionTime,nChannels);
+                    catch
+                    end
                     cd([startDir '\' currFolders(i).name])
                 end
             end
@@ -106,12 +118,12 @@ for days=1:length(daysToProcess)
 end
 disp(['done creating clusters and responses.'])
 %
-%% copy clusterVolumes .mat files to dropbox
+% copy clusterVolumes .mat files to dropbox
 clear all
 folderToRunKmeansOn{1}='Volumes';
 folderToRunKmeansOn{2}='Volumes2';
-daysToProcess{1}='181023_pairedbehaviorimaging_gh146';
 
+daysToProcess{1}='190211_orcoOX5gcamp_behaviorandimaging_copy';
 
 fileToCopy='clusterResponses_';
 destinationFolder='C:\Users\mac0456\Dropbox\flyimaging';
@@ -137,9 +149,9 @@ for days=1:length(daysToProcess)
                 if exist(['leftLobe\' folderToRunKmeansOn{j}])
                     cd(['leftLobe\' folderToRunKmeansOn{j}])
                     if ~exist([destinationFolder '\' daysToProcess{days} '\' currFolders(i).name '\leftLobe'])
-                    mkdir([destinationFolder '\' daysToProcess{days} '\' currFolders(i).name '\leftLobe'])
+                        mkdir([destinationFolder '\' daysToProcess{days} '\' currFolders(i).name '\leftLobe'])
                     end
-                        [status message]=copyfile([startDir '\' currFolders(i).name '\leftLobe\' folderToRunKmeansOn{j} '\' fileToCopy folderToRunKmeansOn{j} '.mat'],[destinationFolder '\' daysToProcess{days} '\' currFolders(i).name '\leftLobe\' fileToCopy folderToRunKmeansOn{j} '.mat']);
+                    [status message]=copyfile([startDir '\' currFolders(i).name '\leftLobe\' folderToRunKmeansOn{j} '\' fileToCopy folderToRunKmeansOn{j} '.mat'],[destinationFolder '\' daysToProcess{days} '\' currFolders(i).name '\leftLobe\' fileToCopy folderToRunKmeansOn{j} '.mat']);
                     cd([startDir '\' currFolders(i).name])
                 end
             end
@@ -151,7 +163,7 @@ for days=1:length(daysToProcess)
                     if ~exist([destinationFolder '\' daysToProcess{days} '\' currFolders(i).name '\rightLobe'])
                         mkdir([destinationFolder '\' daysToProcess{days} '\' currFolders(i).name '\rightLobe'])
                     end
-                        [status message]=copyfile([startDir '\' currFolders(i).name '\rightLobe\' folderToRunKmeansOn{j} '\' fileToCopy folderToRunKmeansOn{j} '.mat'],[destinationFolder '\' daysToProcess{days} '\' currFolders(i).name '\rightLobe\' fileToCopy folderToRunKmeansOn{j} '.mat']);
+                    [status message]=copyfile([startDir '\' currFolders(i).name '\rightLobe\' folderToRunKmeansOn{j} '\' fileToCopy folderToRunKmeansOn{j} '.mat'],[destinationFolder '\' daysToProcess{days} '\' currFolders(i).name '\rightLobe\' fileToCopy folderToRunKmeansOn{j} '.mat']);
                     cd([startDir '\' currFolders(i).name])
                 end
             end
