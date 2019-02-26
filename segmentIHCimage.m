@@ -474,11 +474,12 @@ myimtrunc=bothsides(:,:,(end-1):-1:2); % cut off first and last slices
 
 thresh=10.5; 
 
+
 tic
 
 disp('smoothing image')
 I=myimtrunc;
-I=imgaussfilt3(I,[2 2 1]);
+I=imgaussfilt3(I,[2 2 0.5]);
 disp(['time elapsed: ' num2str(toc/60) ' minutes'])
 
 % gmag = imgradient(I);
@@ -512,7 +513,7 @@ disp(['time elapsed: ' num2str(toc/60) ' minutes'])
 % subplot(1,2,2);imagesc(Ioc)
 
 disp('closing by reconstruction')
-se = strel('ball',10,5);
+se = strel('ball',10,5); % default
 Iobrd = imdilate(Iobr,se);
 Iobrcbr = imreconstruct(imcomplement(Iobrd),imcomplement(Iobr));
 Iobrcbr = imcomplement(Iobrcbr);
@@ -521,7 +522,7 @@ disp(['time elapsed: ' num2str(toc/60) ' minutes'])
 % subplot(1,2,2);imagesc(Iobrcbr)
 
 disp('finding regional max')
-fgm = imregionalmax(Iobrcbr>thresh);
+fgm = imregionalmax(Iobrcbr>thresh); % default
 disp(['time elapsed: ' num2str(toc/60) ' minutes'])
 % figure
 % subplot(1,2,1);imagesc(I)
@@ -535,7 +536,7 @@ im=fgm;
 % Distance transform
 disp('calculating distance transform')
 
-imb=imgaussfilt3(bwdist(~im),[2 2 1]);
+imb=imgaussfilt3(bwdist(~im),[2 2 0.5]);
 
 disp(['time elapsed: ' num2str(toc/60) ' minutes'])
 
@@ -605,21 +606,30 @@ disp('done plotting')
 save([filePrefix 'watershednew2.mat'],'templbl','bothsides','thresh','minSuppressionThreshold')
 disp(['done. total time elapsed: ' num2str(toc/60) ' minutes.'])
 
+
+
 %% step through labelled slices
+% 
+% figure
+% for i=1:size(templbl,3)
+% 
+%     imagesc(nc82norm(:,:,i),[0 30])
+%     pause
+% end
 figure
 for i=1:size(templbl,3)
-    subplot(1,2,1)
-    imagesc(myimtrunc(:,:,i),[0 30])
+    %subplot(1,2,1)
+    %imagesc(myimtrunc(:,:,i),[0 30])
     
 %     subplot(1,3,2)
 %     imagesc(lblImg3d(:,:,i))
 %     
-    subplot(1,2,2)
+    %subplot(1,2,2)
     imagesc(templbl(:,:,i))
 
     
 
     drawnow
-    pause(0.05)
-   % pause
+   % pause(0.05)
+   pause
 end
