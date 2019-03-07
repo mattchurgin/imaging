@@ -46,9 +46,9 @@ brpim=brpim(:,:,zd);
 surfaceim=surfaceim(:,:,zd);
 
 gs=30;
-x=[-50:1:50];
+x=[-100:5:100];
 y=x;
-z=-2:2; 
+z=-1:1; 
 [xx yy zz]=meshgrid(x,y,z);
 gau=1/(length(x)*gs^2)*exp(-(xx.^2+yy.^2 +zz.^2)/(2*gs^2));
 disp('normalizing nc82 image')
@@ -85,7 +85,7 @@ binspotthresh=binspotsmooth>spotimthresh;
 
 disp('masking nc82 image')
 maskednc82=binspotthresh.*nc82norm;
-maskednc82raw=binspotthresh.*nc82im;
+
 bothsides=maskednc82;
 
 nc82norm=single(nc82norm);
@@ -96,23 +96,20 @@ save([filePrefix 'normed'],'nc82l','bothsides')
 disp('saved')
 %% manually mask left and right lobes
 figure
-imagesc(nc82im(:,:,30),[0 10])
+imagesc(nc82norm(:,:,30),[0 100])
 rmask=roipoly;
 lmask=~rmask;
 
 for i=1:nc82l
-   imagesc(rmask.*nc82im(:,:,i),[0 10])
+   imagesc(rmask.*nc82norm(:,:,i),[0 100])
    pause(0.05)
 end
 for i=1:nc82l
-   imagesc(lmask.*nc82im(:,:,i),[0 10])
+   imagesc(lmask.*nc82norm(:,:,i),[0 100])
    pause(0.05)
 end
 
-for i=1:nc82l
-   imagesc(nc82im(:,:,i)>3)
-   pause(0.05)
-end
+
 
 rightim=rmask.*maskednc82;
 leftim=lmask.*maskednc82;
@@ -373,19 +370,12 @@ for i=randv
 end
 disp('done plotting')
 
-%% filter maskecnc82raw
-
-smnc82=imgaussfilt(maskednc82raw,2);
-[ix iy iz]=gradient(smnc82);
-gim=sqrt(ix.^2+iy.^2+iz.^2);
-
-
 
 %% marker-controlled water shed on slices
-myimtrunc=maskednc82raw(:,:,end:-1:1);
+myimtrunc=bothsides(:,:,end:-1:1);
 close all
 sliceNum=50;
-thresh=5;
+thresh=55;
 figure
 for sliceNum=1:nc82l
 I=myimtrunc(:,:,sliceNum);
